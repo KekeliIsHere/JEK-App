@@ -46,11 +46,19 @@ export default function AuthPage() {
           Replace the content of the div below with your image, canvas, Lottie, or animation.
           Keep the container (wrapper) if you want the same layout/responsiveness.
         */}
-        <div className="hidden md:flex items-center justify-center bg-[#b3ccb8] p-6">
-          {/* Replace the inner box with: <img src="/path/to/your.png" alt="..." />  OR  a component */}
-          <div className="w-72 h-72 bg-[#8baab1] rounded-xl shadow-inner flex items-center justify-center text-[#fbf9f9] text-lg font-semibold">
-            {/* <-- IMAGE AREA: replace this text and box with your media --> */}
-            IMAGE AREA
+        <div className="hidden md:flex items-stretch justify-center bg-[var(--secondary)] p-0">
+          {/* Image fills the left column. Put your file at /JEKlogo.png (frontend/public/JEKlogo.png).
+              The image will cover the area and keep aspect by object-cover. */}
+          <div className="w-full h-full">
+            <img
+              src="/JEKlogo.png"
+              alt="Logo"
+              onError={(e) => {
+                // fallback to vite/react logo shipped in public if JEKlogo.png isn't present
+                (e.currentTarget as HTMLImageElement).src = '/vite.svg';
+              }}
+              className="w-full h-full object-cover rounded-l-2xl"
+            />
           </div>
         </div>
 
