@@ -1,13 +1,11 @@
-
+import AuthPage from "./loginpage";
 
 function App() {
-
-
   return (
     <div>
-      <h1>My App</h1>
+      <AuthPage />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
