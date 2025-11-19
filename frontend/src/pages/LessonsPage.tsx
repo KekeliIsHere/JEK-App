@@ -1,18 +1,26 @@
 // src/pages/LessonsPage.tsx
 import { useNavigate } from "react-router-dom";
 
+interface UserStats {
+  level: number;
+  xp: number;
+  completedLessons: string[];
+}
+
 interface LessonsPageProps {
   studentName: string;
+  userStats?: UserStats;
+  onUpdateStats?: (stats: UserStats) => void;
 }
 
 const topics = [
   {
-    id: "sets-basic",
-    title: "Basic Set Concepts",
+    id: "props-conn",
+    title: "Propositions & Truth Values",
     level: "Intro",
-    estMinutes: 15,
-    description: "Sets, elements, subset, empty set, and simple Venn diagrams.",
-    tags: ["sets", "notation"],
+    estMinutes: 10,
+    description: "What a proposition is and how we assign T or F.",
+    tags: ["propositions"],
   },
   {
     id: "sets-ops",
@@ -23,12 +31,12 @@ const topics = [
     tags: ["sets", "operations"],
   },
   {
-    id: "props",
-    title: "Propositions & Truth Values",
-    level: "Intro",
-    estMinutes: 10,
-    description: "What a proposition is and how we assign T or F.",
-    tags: ["propositions"],
+    id: "truth-tables",
+    title: "Truth Tables",
+    level: "Core",
+    estMinutes: 25,
+    description: "Constructing truth tables and checking equivalence.",
+    tags: ["truth tables"],
   },
   {
     id: "connectives",
@@ -72,12 +80,11 @@ const topics = [
   },
 ];
 
-const LessonsPage = ({ studentName }: LessonsPageProps) => {
+const LessonsPage = ({ studentName, userStats }: LessonsPageProps) => {
   const navigate = useNavigate();
 
   const handleStartLesson = (id: string) => {
-    console.log("Start lesson:", id);
-    alert(`Starting lesson: ${id}`);
+    navigate(`/lesson/${id}`);
   };
 
   return (
@@ -106,7 +113,7 @@ const LessonsPage = ({ studentName }: LessonsPageProps) => {
           />
           <div className="hidden md:flex items-center justify-center flex-col w-12 h-12 rounded-full border border-[#8baab1] text-xs">
             <span>Level</span>
-            <span className="font-bold text-lg">2</span>
+            <span className="font-bold text-lg">{userStats?.level || 0}</span>
           </div>
         </div>
       </header>
@@ -114,10 +121,15 @@ const LessonsPage = ({ studentName }: LessonsPageProps) => {
       {/* Cards */}
       <main>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {topics.map((topic) => (
+          {topics.map((topic, i) => {
+            const prevTopic = topics[i - 1];
+            const unlocked =
+              i === 0 || (userStats && userStats.completedLessons.includes(prevTopic?.id || ""));
+
+            return (
             <article
               key={topic.id}
-              className="bg:white rounded-2xl shadow-md border border-[#b3ccb8]/40 p-4 flex flex-col space-y-2"
+              className="relative bg:white rounded-2xl shadow-md border border-[#b3ccb8]/40 p-4 flex flex-col space-y-2"
             >
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold text-lg">{topic.title}</h2>
@@ -158,17 +170,20 @@ const LessonsPage = ({ studentName }: LessonsPageProps) => {
 
               <div className="mt-3 flex space-x-2">
                 <button
-                  onClick={() => handleStartLesson(topic.id)}
-                  className="flex-1 px-3 py-2 rounded-full bg-[#68ba4a] text-white text-sm font-semibold hover:opacity-90"
+                  onClick={() => unlocked && handleStartLesson(topic.id)}
+                  disabled={!unlocked}
+                  className={`flex-1 px-3 py-2 rounded-full text-white text-sm font-semibold transition ${
+                    !unlocked ? "bg-gray-300 text-gray-600 cursor-not-allowed" : "bg-[#68ba4a] hover:opacity-90"
+                  }`}
                 >
-                  Start Lesson
+                  {unlocked ? "Start Lesson" : "🔒 Locked"}
                 </button>
-                <button className="flex-1 px-3 py-2 rounded-full border border-[#8baab1] text-sm hover:bg-[#8baab1]/10">
+                <button disabled={!unlocked} className={`flex-1 px-3 py-2 rounded-full border border-[#8baab1] text-sm ${!unlocked?"opacity-60 cursor-not-allowed":"hover:bg-[#8baab1]/10"}`}>
                   Practice Only
                 </button>
               </div>
             </article>
-          ))}
+          )})}
         </div>
       </main>
     </div>

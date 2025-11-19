@@ -1,8 +1,18 @@
 // src/pages/Dashboard.tsx
 import { useNavigate } from "react-router-dom";
+import { IconDashboard, IconLessons, IconQuizzes, IconGames, IconAdmin, IconLogout, IconNotification, IconCheck } from "../components/Icons";
+
+interface UserStats {
+  level: number;
+  xp: number;
+  completedLessons: string[];
+}
 
 interface DashboardProps {
   studentName: string;
+  onLogout: () => void;
+  userStats: UserStats;
+  onUpdateStats: (stats: UserStats) => void;
 }
 
 const modules = [
@@ -12,7 +22,7 @@ const modules = [
   { id: "conditionals", title: "Conditionals & Variants", progress: 0, badge: "Upcoming" },
 ];
 
-const Dashboard = ({ studentName }: DashboardProps) => {
+const Dashboard = ({ studentName, onLogout, userStats }: DashboardProps) => {
   const navigate = useNavigate();
 
   return (
@@ -31,7 +41,7 @@ const Dashboard = ({ studentName }: DashboardProps) => {
 
         <nav className="flex-1 space-y-2">
           <button className="w-full flex items-center space-x-2 px-3 py-2 rounded-full bg-[#fbf9f9] shadow-sm text-sm font-semibold">
-            <span>📊</span>
+            <IconDashboard />
             <span>Dashboard</span>
           </button>
 
@@ -39,16 +49,22 @@ const Dashboard = ({ studentName }: DashboardProps) => {
             onClick={() => navigate("/lessons")}
             className="w-full flex items-center space-x-2 px-3 py-2 rounded-full hover:bg-white/70 text-sm"
           >
-            <span>📘</span>
+            <IconLessons />
             <span>Lessons</span>
           </button>
 
-          <button className="w-full flex items-center space-x-2 px-3 py-2 rounded-full hover:bg:white/70 text-sm">
-            <span>🎯</span>
+          <button
+            onClick={() => navigate("/quizzes")}
+            className="w-full flex items-center space-x-2 px-3 py-2 rounded-full hover:bg-white/70 text-sm"
+          >
+            <IconQuizzes />
             <span>Quizzes</span>
           </button>
-          <button className="w-full flex items-center space-x-2 px-3 py-2 rounded-full hover:bg:white/70 text-sm">
-            <span>🎮</span>
+          <button
+            onClick={() => navigate("/games")}
+            className="w-full flex items-center space-x-2 px-3 py-2 rounded-full hover:bg-white/70 text-sm"
+          >
+            <IconGames />
             <span>Games</span>
           </button>
         </nav>
@@ -67,7 +83,7 @@ const Dashboard = ({ studentName }: DashboardProps) => {
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">
-              Welcome back, {studentName} 👋
+              Welcome back, {studentName}
             </h1>
             <p className="text-sm text-[#060404]/70 mt-1">
               Continue your journey in logical reasoning and build proof skills.
@@ -82,16 +98,34 @@ const Dashboard = ({ studentName }: DashboardProps) => {
                 className="px-3 py-2 rounded-full border border-[#b3ccb8] text-sm focus:outline-none focus:ring-2 focus:ring-[#68ba4a] bg-white"
               />
             </div>
-            <button className="w-9 h-9 rounded-full bg-[#b3ccb8] flex items-center justify-center">
-              🔔
+            <button className="w-9 h-9 rounded-full bg-[#b3ccb8] flex items-center justify-center text-[#060404] hover:bg-[#a3bcb8] transition">
+              <IconNotification />
             </button>
             <div className="flex items-center justify-center flex-col w-12 h-12 rounded-full border border-[#8baab1] text-xs">
               <span>Level</span>
-              <span className="font-bold text-lg">2</span>
+              <span className="font-bold text-lg">{userStats.level}</span>
             </div>
             <div className="w-9 h-9 rounded-full bg-[#8baab1] text-white flex items-center justify-center font-semibold">
               {studentName[0]?.toUpperCase() ?? "S"}
             </div>
+            <button
+              onClick={() => navigate("/admin")}
+              className="px-3 py-2 text-sm font-semibold rounded-full bg-[#8baab1] text-white hover:bg-[#7a9aa1] transition flex items-center gap-1"
+              title="Admin Panel"
+            >
+              <IconAdmin />
+              <span className="hidden sm:inline">Admin</span>
+            </button>
+            <button
+              onClick={() => {
+                onLogout();
+                navigate("/");
+              }}
+              className="px-3 py-2 text-sm font-semibold rounded-full bg-red-100 text-red-700 hover:bg-red-200 transition flex items-center gap-1"
+            >
+              <IconLogout />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
         </header>
 
@@ -101,17 +135,17 @@ const Dashboard = ({ studentName }: DashboardProps) => {
             <div>
               <h2 className="font-semibold text-lg">XP Progress</h2>
               <p className="text-xs md:text-sm text-[#060404]/70">
-                6,542 / 7,500 XP · almost at Level 3!
+                {userStats.xp} / {(userStats.level + 1) * 100} XP · Level {userStats.level}
               </p>
             </div>
             <span className="text-xs md:text-sm bg-[#b3ccb8]/70 px-3 py-1 rounded-full">
-              +40 XP streak bonus 🔥
+              {userStats.xp > 0 ? `+${userStats.xp} XP` : "Start learning!"}
             </span>
           </div>
           <div className="w-full h-3 bg-[#e5f0e5] rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-[#68ba4a] via-[#8baab1] to-[#68ba4a]"
-              style={{ width: "87%" }}
+              style={{ width: `${(userStats.xp % 100) / 1}%` }}
             />
           </div>
         </section>
@@ -140,7 +174,7 @@ const Dashboard = ({ studentName }: DashboardProps) => {
                           : "bg-white border-[#b3ccb8]"
                       }`}
                     >
-                      {m.progress === 100 ? "✓" : i + 1}
+                      {m.progress === 100 ? <IconCheck /> : i + 1}
                     </div>
                     {i !== modules.length - 1 && (
                       <div className="flex-1 w-[2px] bg-[#d1dfd1] mt-1" />
@@ -173,17 +207,43 @@ const Dashboard = ({ studentName }: DashboardProps) => {
             <h2 className="font-semibold text-lg">Quick Actions</h2>
             <button
               onClick={() => navigate("/lessons")}
-              className="w-full text-left px-3 py-2 rounded-xl bg-[#f4f7f4] hover:bg-[#e8f1e8] text-sm"
+              className="w-full text-left px-3 py-2 rounded-xl bg-[#f4f7f4] hover:bg-[#e8f1e8] text-sm transition"
             >
-              📘 Go to Lessons
-              <span className="block text-[11px] text-[#060404]/70">
-                Browse all topics &amp; start a module
+              <span className="font-semibold">Browse Lessons</span>
+              <span className="block text-[11px] text-[#060404]/70 mt-1">
+                Start learning from the beginning
               </span>
             </button>
-            <button className="w-full text-left px-3 py-2 rounded-xl bg-[#f4f7f4] hover:bg-[#e8f1e8] text-sm">
-              🎯 Start a Practice Quiz
-              <span className="block text-[11px] text-[#060404]/70">
-                10 mixed questions, timed
+            <button
+              onClick={() => navigate("/quizzes")}
+              disabled={userStats.completedLessons.length === 0}
+              className={`w-full text-left px-3 py-2 rounded-xl text-sm transition ${
+                userStats.completedLessons.length === 0
+                  ? "bg-gray-200 text-gray-500 cursor-not-allowed opacity-60"
+                  : "bg-[#f4f7f4] hover:bg-[#e8f1e8]"
+              }`}
+            >
+              <span className="font-semibold">
+                {userStats.completedLessons.length === 0 ? "Quizzes Locked" : "Practice Quizzes"}
+              </span>
+              <span className="block text-[11px] text-[#060404]/70 mt-1">
+                {userStats.completedLessons.length === 0 ? "Complete a lesson first" : "Test your knowledge"}
+              </span>
+            </button>
+            <button
+              onClick={() => navigate("/games")}
+              disabled={userStats.completedLessons.length === 0}
+              className={`w-full text-left px-3 py-2 rounded-xl text-sm transition ${
+                userStats.completedLessons.length === 0
+                  ? "bg-gray-200 text-gray-500 cursor-not-allowed opacity-60"
+                  : "bg-[#f4f7f4] hover:bg-[#e8f1e8]"
+              }`}
+            >
+              <span className="font-semibold">
+                {userStats.completedLessons.length === 0 ? "Games Locked" : "Play Logic Games"}
+              </span>
+              <span className="block text-[11px] text-[#060404]/70 mt-1">
+                {userStats.completedLessons.length === 0 ? "Complete a lesson first" : "Learn through challenges"}
               </span>
             </button>
           </div>

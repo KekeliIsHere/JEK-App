@@ -8,6 +8,7 @@ interface AuthPageProps {
 export default function AuthPage({ onLogin }: AuthPageProps) {
   // state for toggling between Sign In and Sign Up
   const [isLogin, setIsLogin] = useState(true);
+  const [isAdminMode, setIsAdminMode] = useState(false);
   const navigate = useNavigate();
 
   // Form state
@@ -41,6 +42,18 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
     // Log submission
     // eslint-disable-next-line no-console
     console.log(isLogin ? "Sign In submitted" : "Sign Up submitted", formData);
+
+    // Check if admin mode and password is correct
+    if (isAdminMode) {
+      if (formData.password === "admin123") {
+        onLogin("admin");
+        navigate("/admin");
+      } else {
+        alert("❌ Invalid admin password");
+        setFormData({ ...formData, password: "" });
+      }
+      return;
+    }
 
     // Call onLogin with the student name and navigate to dashboard
     const studentName = isLogin
@@ -82,11 +95,13 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
 
         {/* Auth Panel (right column) */}
         <div className="p-8 flex flex-col justify-center text-[#060404]">
-          <h2 className="text-3xl font-bold mb-6 text-center">{isLogin ? "Welcome Back" : "Create Account"}</h2>
+          <h2 className="text-3xl font-bold mb-6 text-center">
+            {isAdminMode ? "Admin Access" : (isLogin ? "Welcome Back" : "Create Account")}
+          </h2>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
-            {/* Full name only shown on Sign Up */}
-            {!isLogin && (
+            {/* Full name only shown on Sign Up (not in admin mode) */}
+            {!isLogin && !isAdminMode && (
              <>
               <input
                 name="firstname"
@@ -108,21 +123,37 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
               
             )}
 
-            <input
-              name="email"
-              type="email"
-              placeholder="Email"
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full p-3 rounded-lg border border-[#b3ccb8] focus:outline-none focus:ring-2 focus:ring-[#68ba4a]"
-            />
+            {/* Email field hidden in admin mode */}
+            {!isAdminMode && (
+              <input
+                name="email"
+                type="email"
+                placeholder="Email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full p-3 rounded-lg border border-[#b3ccb8] focus:outline-none focus:ring-2 focus:ring-[#68ba4a]"
+              />
+            )}
+
+            {/* Email field in admin mode */}
+            {isAdminMode && (
+              <input
+                name="email"
+                type="email"
+                placeholder="Admin Email (any email works)"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full p-3 rounded-lg border border-[#b3ccb8] focus:outline-none focus:ring-2 focus:ring-[#68ba4a]"
+              />
+            )}
 
             <div className="relative">
               <input
                 name="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="Password"
+                placeholder={isAdminMode ? "Admin Password" : "Password"}
                 required
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -161,53 +192,71 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
               type="submit"
               className="w-full p-3 rounded-lg bg-[#68ba4a] text-white font-semibold hover:opacity-90 transition"
             >
-              {isLogin ? "Sign In" : "Sign Up"}
+              {isAdminMode ? "Admin Login" : (isLogin ? "Sign In" : "Sign Up")}
             </button>
 
-            <div className="text-center text-sm text-[#060404]/70">or</div>
+            {!isAdminMode && (
+              <>
+                <div className="text-center text-sm text-[#060404]/70">or</div>
 
-            {/* Google Login - make this type=button so it doesn't submit the form */}
-            <button
-              type="button"
-              onClick={() => {
-                // TODO: wire this to your Google OAuth popup logic
-                // eslint-disable-next-line no-console
-                console.log("Google login clicked");
-              }}
-              className="w-full p-3 rounded-lg border border-[#8baab1] text-[#060404] font-medium hover:bg-[#8baab1]/20 transition"
-            >
-              <div className="flex items-center justify-center space-x-2">
-                {/* Google Logo */}
-                <img
-                  src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png"
-                  alt="Google"
-                  className="w-5 h-5"
-                />
-                <span>Continue with Google</span>
-              </div>
-            </button>
+                {/* Google Login - make this type=button so it doesn't submit the form */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    // TODO: wire this to your Google OAuth popup logic
+                    // eslint-disable-next-line no-console
+                    console.log("Google login clicked");
+                  }}
+                  className="w-full p-3 rounded-lg border border-[#8baab1] text-[#060404] font-medium hover:bg-[#8baab1]/20 transition"
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    {/* Google Logo */}
+                    <img
+                      src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png"
+                      alt="Google"
+                      className="w-5 h-5"
+                    />
+                    <span>Continue with Google</span>
+                  </div>
+                </button>
+              </>
+            )}
           </form>
 
           {/* Toggle between Login and Signup. Put type=button to avoid submitting when clicked */}
-          <p className="text-center text-sm mt-4 text-[#060404]/80">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+          {!isAdminMode ? (
+            <p className="text-center text-sm mt-4 text-[#060404]/80">
+              {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+              <button
+                type="button"
+                onClick={toggleAuthMode}
+                className="text-[#68ba4a] font-semibold hover:underline"
+              >
+                {isLogin ? "Sign Up" : "Sign In"}
+              </button>
+            </p>
+          ) : (
+            <p className="text-center text-sm mt-4 text-[#060404]/80">
+              <button
+                type="button"
+                onClick={() => setIsAdminMode(false)}
+                className="text-[#68ba4a] font-semibold hover:underline"
+              >
+                Back to Student Login
+              </button>
+            </p>
+          )}
+
+          {/* Admin login button */}
+          {!isAdminMode && (
             <button
               type="button"
-              onClick={toggleAuthMode}
-              className="text-[#68ba4a] font-semibold hover:underline"
+              onClick={() => setIsAdminMode(true)}
+              className="w-full mt-4 p-3 rounded-lg border border-[#8baab1] text-[#060404] font-medium hover:bg-[#8baab1]/20 transition"
             >
-              {isLogin ? "Sign Up" : "Sign In"}
+              🔧 Admin Access
             </button>
-          </p>
-
-          {/*
-            Notes / Debugging tips:
-            - If you still see "is not a function" for setIsLogin, ensure:
-              1) You are running this inside a React environment that supports hooks (React >=16.8).
-              2) The file is imported as a React component (not copy-pasted into plain HTML).
-              3) You don't have a global variable shadowing `setIsLogin` (unlikely but possible).
-            - If you want, I can add PropTypes or a strict TS version to catch more issues early.
-          */}
+          )}
         </div>
       </div>
     </div>
