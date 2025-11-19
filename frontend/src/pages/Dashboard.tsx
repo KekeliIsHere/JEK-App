@@ -1,5 +1,4 @@
-// src/Dashboard.tsx
-import React from "react";
+// src/pages/Dashboard.tsx
 import { useNavigate } from "react-router-dom";
 
 interface DashboardProps {
@@ -7,33 +6,13 @@ interface DashboardProps {
 }
 
 const modules = [
-  {
-    id: "sets",
-    title: "Basic Sets & Operations",
-    progress: 80,
-    badge: "Core",
-  },
-  {
-    id: "props",
-    title: "Propositions & Connectives",
-    progress: 60,
-    badge: "Core",
-  },
-  {
-    id: "truth-tables",
-    title: "Truth Tables",
-    progress: 30,
-    badge: "Core",
-  },
-  {
-    id: "conditionals",
-    title: "Conditionals & Variants",
-    progress: 0,
-    badge: "Upcoming",
-  },
+  { id: "sets", title: "Basic Sets & Operations", progress: 80, badge: "Core" },
+  { id: "props", title: "Propositions & Connectives", progress: 60, badge: "Core" },
+  { id: "truth-tables", title: "Truth Tables", progress: 30, badge: "Core" },
+  { id: "conditionals", title: "Conditionals & Variants", progress: 0, badge: "Upcoming" },
 ];
 
-export default function Dashboard({ studentName }: DashboardProps) {
+const Dashboard = ({ studentName }: DashboardProps) => {
   const navigate = useNavigate();
 
   return (
@@ -51,9 +30,7 @@ export default function Dashboard({ studentName }: DashboardProps) {
         </div>
 
         <nav className="flex-1 space-y-2">
-          <button
-            className="w-full flex items-center space-x-2 px-3 py-2 rounded-full bg-[#fbf9f9] shadow-sm text-sm font-semibold"
-          >
+          <button className="w-full flex items-center space-x-2 px-3 py-2 rounded-full bg-[#fbf9f9] shadow-sm text-sm font-semibold">
             <span>📊</span>
             <span>Dashboard</span>
           </button>
@@ -66,12 +43,11 @@ export default function Dashboard({ studentName }: DashboardProps) {
             <span>Lessons</span>
           </button>
 
-          <button className="w-full flex items-center space-x-2 px-3 py-2 rounded-full hover:bg-white/70 text-sm">
+          <button className="w-full flex items-center space-x-2 px-3 py-2 rounded-full hover:bg:white/70 text-sm">
             <span>🎯</span>
             <span>Quizzes</span>
           </button>
-
-          <button className="w-full flex items-center space-x-2 px-3 py-2 rounded-full hover:bg-white/70 text-sm">
+          <button className="w-full flex items-center space-x-2 px-3 py-2 rounded-full hover:bg:white/70 text-sm">
             <span>🎮</span>
             <span>Games</span>
           </button>
@@ -81,9 +57,7 @@ export default function Dashboard({ studentName }: DashboardProps) {
           <p className="uppercase tracking-wide text-[10px] opacity-80">
             Today&apos;s goal
           </p>
-          <p className="font-semibold">
-            Finish 1 lesson & 1 quiz 💡
-          </p>
+          <p className="font-semibold">Finish 1 lesson &amp; 1 quiz 💡</p>
         </div>
       </aside>
 
@@ -134,45 +108,26 @@ export default function Dashboard({ studentName }: DashboardProps) {
               +40 XP streak bonus 🔥
             </span>
           </div>
-
           <div className="w-full h-3 bg-[#e5f0e5] rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-[#68ba4a] via-[#8baab1] to-[#68ba4a]"
               style={{ width: "87%" }}
             />
           </div>
-
-          <div className="flex gap-6 mt-3 text-xs md:text-sm">
-            <div>
-              <p className="uppercase text-[10px] text-[#060404]/60">
-                Current streak
-              </p>
-              <p className="font-semibold">5 days</p>
-            </div>
-            <div>
-              <p className="uppercase text-[10px] text-[#060404]/60">
-                Last activity
-              </p>
-              <p className="font-semibold">Quiz: Truth Tables</p>
-            </div>
-          </div>
         </section>
 
-        {/* Two-column layout: path + actions */}
+        {/* Path + quick actions */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
           {/* Learning path */}
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-md border border-[#b3ccb8]/40 p-4">
+          <div className="lg:col-span-2 bg:white rounded-2xl shadow-md border border-[#b3ccb8]/40 p-4">
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-semibold text-lg">My Logic Path</h2>
               <span className="text-xs bg-[#8baab1] text-white px-3 py-1 rounded-full">
                 Propositional Logic
               </span>
             </div>
-            <p className="text-xs md:text-sm text-[#060404]/70 mb-3">
-              Work through each step from sets and propositions to conditionals.
-            </p>
 
-            <div className="space-y-3">
+            <div className="space-y-3 mt-2">
               {modules.map((m, i) => (
                 <div key={m.id} className="flex items-start space-x-3">
                   <div className="flex flex-col items-center">
@@ -191,7 +146,6 @@ export default function Dashboard({ studentName }: DashboardProps) {
                       <div className="flex-1 w-[2px] bg-[#d1dfd1] mt-1" />
                     )}
                   </div>
-
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-semibold">{m.title}</p>
@@ -215,7 +169,7 @@ export default function Dashboard({ studentName }: DashboardProps) {
           </div>
 
           {/* Quick actions */}
-          <div className="bg-white rounded-2xl shadow-md border border-[#b3ccb8]/40 p-4 flex flex-col space-y-3">
+          <div className="bg:white rounded-2xl shadow-md border border-[#b3ccb8]/40 p-4 flex flex-col space-y-3">
             <h2 className="font-semibold text-lg">Quick Actions</h2>
             <button
               onClick={() => navigate("/lessons")}
@@ -223,7 +177,7 @@ export default function Dashboard({ studentName }: DashboardProps) {
             >
               📘 Go to Lessons
               <span className="block text-[11px] text-[#060404]/70">
-                Browse all topics & start a module
+                Browse all topics &amp; start a module
               </span>
             </button>
             <button className="w-full text-left px-3 py-2 rounded-xl bg-[#f4f7f4] hover:bg-[#e8f1e8] text-sm">
@@ -232,40 +186,33 @@ export default function Dashboard({ studentName }: DashboardProps) {
                 10 mixed questions, timed
               </span>
             </button>
-            <button className="w-full text-left px-3 py-2 rounded-xl bg-[#f4f7f4] hover:bg-[#e8f1e8] text-sm">
-              🎮 Play a Logic Game
-              <span className="block text-[11px] text-[#060404]/70">
-                Truth table or matching game
-              </span>
-            </button>
           </div>
         </section>
 
-        {/* Bottom: feedback + upcoming */}
+        {/* Bottom */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-2xl shadow-md border border-[#b3ccb8]/40 p-4">
+          <div className="bg:white rounded-2xl shadow-md border border-[#b3ccb8]/40 p-4">
             <h2 className="font-semibold text-lg mb-2">Reasoning Feedback</h2>
             <div className="space-y-2 text-sm">
-              <div className="bg-[#f4f7f4] rounded-xl p-3">
+              <div className="bg:#f4f7f4 rounded-xl p-3">
                 <p className="font-semibold">Misreading conditionals</p>
                 <p className="text-xs text-[#060404]/70 mt-1">
-                  Remember: &quot;if p then q&quot; is only false when p is true and q
-                  is false.
+                  &quot;If p then q&quot; is only false when p is true and q is false.
                 </p>
               </div>
-              <div className="bg-[#f4f7f4] rounded-xl p-3">
+              <div className="bg:#f4f7f4 rounded-xl p-3">
                 <p className="font-semibold">Converse vs contrapositive</p>
                 <p className="text-xs text-[#060404]/70 mt-1">
-                  Try rewriting statements with ¬ and → before answering.
+                  Rewrite statements with ¬ and → to see the structure clearly.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-md border border-[#b3ccb8]/40 p-4">
+          <div className="bg:white rounded-2xl shadow-md border border-[#b3ccb8]/40 p-4">
             <h2 className="font-semibold text-lg mb-2">Upcoming Activities</h2>
             <ul className="space-y-2 text-sm">
-              <li className="flex items-center justify-between bg-[#f4f7f4] rounded-xl p-3">
+              <li className="flex items-center justify-between bg:#f4f7f4 rounded-xl p-3">
                 <div>
                   <p className="font-semibold">Quiz: Logical Equivalence</p>
                   <p className="text-xs text-[#060404]/70">
@@ -276,10 +223,12 @@ export default function Dashboard({ studentName }: DashboardProps) {
                   Preview
                 </button>
               </li>
-              <li className="flex items-center justify-between bg-[#f4f7f4] rounded-xl p-3">
+              <li className="flex items-center justify-between bg:#f4f7f4 rounded-xl p-3">
                 <div>
                   <p className="font-semibold">Homework: Truth Tables</p>
-                  <p className="text-xs text-[#060404]/70">Due Friday · 5 problems</p>
+                  <p className="text-xs text-[#060404]/70">
+                    Due Friday · 5 problems
+                  </p>
                 </div>
                 <button className="text-xs px-3 py-1 rounded-full border border-[#8baab1]">
                   View
@@ -291,5 +240,6 @@ export default function Dashboard({ studentName }: DashboardProps) {
       </main>
     </div>
   );
-}
+};
 
+export default Dashboard;
