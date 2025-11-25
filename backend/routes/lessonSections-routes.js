@@ -1,0 +1,27 @@
+import express from "express";
+import {
+  createSection,
+  getSectionsByLesson,
+  getSectionById,
+  updateSection,
+  deleteSection,
+} from "../controllers/lessonSections-controllers.js";
+
+const router = express.Router();
+
+// CREATE SECTION under a lesson
+router.post("/insert_section/:lessonId", createSection);
+
+// GET ALL SECTIONS under a lesson
+router.get("/:lessonId", getSectionsByLesson);
+
+// GET SINGLE SECTION
+router.get("/section/:id", getSectionById);
+
+// UPDATE SECTION
+router.patch("/section/update/:id", updateSection);
+
+// DELETE SECTION
+router.delete("/section/delete/:id", deleteSection);
+
+export default router;
