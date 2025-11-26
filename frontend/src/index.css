@@ -8,3 +8,23 @@
 	--accent: #8baab1;
 }
 
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+	width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+	background: #e8f5e9;
+	border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+	background: linear-gradient(to bottom, #68ba4a, #8baab1);
+	border-radius: 10px;
+	transition: background 0.3s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+	background: linear-gradient(to bottom, #5ca03e, #7a9aa0);
+}
+

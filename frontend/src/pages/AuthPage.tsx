@@ -1,17 +1,16 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import { useAuth } from "../context/AuthContext";
+import type { AxiosError } from "axios";
 
-interface AuthPageProps {
-  onLogin: (name: string) => void;
-}
-
-export default function AuthPage({ onLogin }: AuthPageProps) {
-  // state for toggling between Sign In and Sign Up
+export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [isAdminMode, setIsAdminMode] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  // Form state
   const [formData, setFormData] = useState({
     firstname: "",
     lastname: "",
@@ -19,137 +18,202 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
     password: "",
   });
 
-  // Defensive toggle function: checks that setIsLogin is a function before calling.
-  // In normal React environments this is unnecessary, but it prevents the specific
-  // runtime error you reported ("" is not a function) when environments are misconfigured.
-  const toggleAuthMode = () => {
-    if (typeof setIsLogin === "function") {
-      setIsLogin((prev) => !prev);
-    } else {
-      // If setIsLogin unexpectedly isn't a function, log useful debugging info
-      // so you (or I) can trace why hooks might be broken in the environment.
-      // Do not throw — degrade gracefully.
-      // (This should never happen in a standard React app.)
-      // eslint-disable-next-line no-console
-      console.error("setIsLogin is not a function", setIsLogin);
-    }
-  };
-
-  // Handle the form submit. Prevent default to avoid full page reloads causing
-  // odd runtime behavior in non-React environments.
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Log submission
-    // eslint-disable-next-line no-console
-    console.log(isLogin ? "Sign In submitted" : "Sign Up submitted", formData);
 
-    // Check if admin mode and password is correct
-    if (isAdminMode) {
-      if (formData.password === "admin123") {
-        onLogin("admin");
-        navigate("/admin");
-      } else {
-        alert("❌ Invalid admin password");
-        setFormData({ ...formData, password: "" });
+    // Validation for sign-up
+    if (!isLogin && !isAdminMode) {
+      if (!formData.firstname || !formData.lastname) {
+        Swal.fire({
+          icon: "error",
+          title: "Missing Information",
+          text: "Please fill in your first and last name.",
+          confirmButtonColor: "#68ba4a",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+        });
+        return;
       }
+    }
+
+    if (!formData.email || !formData.password) {
+      Swal.fire({
+        icon: "error",
+        title: "Missing Credentials",
+        text: "Please enter your email and password.",
+        confirmButtonColor: "#68ba4a",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
       return;
     }
 
-    // Call onLogin with the student name and navigate to dashboard
-    const studentName = isLogin
-      ? formData.email.split("@")[0] // Use email prefix as name for login
-      : `${formData.firstname} ${formData.lastname}`; // Use full name for signup
-
-    onLogin(studentName);
-    navigate("/dashboard");
+    try {
+      await login(formData.email, formData.password);
+      await Swal.fire({
+        icon: "success",
+        title: "Login Successful!",
+        text: "Welcome back to LogicTutor.",
+        confirmButtonColor: "#68ba4a",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true,
+      });
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Login failed!", err);
+      const axiosError = err as AxiosError<{ message?: string }>;
+      await Swal.fire({
+        icon: "error",
+        title: "Login Failed",
+        text: axiosError.response?.data?.message || "Invalid email and password. Please try again.",
+        confirmButtonColor: "#68ba4a",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+    }
   };
 
-  // toggle to reveal/hide password
-  const [showPassword, setShowPassword] = useState(false);
+  const toggleAuthMode = () => {
+    setIsLogin(!isLogin);
+    setFormData({ firstname: "", lastname: "", email: "", password: "" });
+    setShowPassword(false);
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#fbf9f9] p-6">
-      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl border border-[#b3ccb8] grid grid-cols-1 md:grid-cols-2 overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-[#f8faf9] via-[#e8f5e9] to-[#d8f0dd] p-4 sm:p-6">
+      <div className="w-full max-w-6xl bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl border-2 border-[#e8f5e9] grid grid-cols-1 md:grid-cols-2 overflow-hidden">
 
-        {/*
-          IMAGE SLOT (left column)
-          -------------------------
-          Replace the content of the div below with your image, canvas, Lottie, or animation.
-          Keep the container (wrapper) if you want the same layout/responsiveness.
-        */}
-        <div className="hidden md:flex items-stretch justify-center bg-[var(--secondary)] p-0">
-          {/* Image fills the left column. Put your file at /JEKlogo.png (frontend/public/JEKlogo.png).
-              The image will cover the area and keep aspect by object-cover. */}
-          <div className="w-full h-full">
-            <img
-              src="/JEKlogo.png"
-              alt="Logo"
-              onError={(e) => {
-                // fallback to vite/react logo shipped in public if JEKlogo.png isn't present
-                (e.currentTarget as HTMLImageElement).src = '/vite.svg';
-              }}
-              className="w-full h-full object-cover rounded-l-2xl"
-            />
+        {/* Left Panel - Logo with Overlay */}
+        <div className="hidden md:flex items-center justify-center relative overflow-hidden">
+          {/* Background Image */}
+          <img
+            src="/JEKlogo.png"
+            alt="LogicTutor Logo"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = '/vite.svg';
+            }}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-linear-to-br from-green-400/20 via-[#8baab1]/85 to-green-400/30"></div>
+
+          {/* Decorative Blur Elements */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-10 left-10 w-40 h-40 bg-white rounded-full blur-3xl"></div>
+            <div className="absolute bottom-20 right-10 w-60 h-60 bg-white rounded-full blur-3xl"></div>
+          </div>
+
+          {/* Content Overlay */}
+          <div className="relative z-10 text-center text-white p-8">
+            <div className="w-32 h-32 mx-auto mb-6 rounded-2xl bg-white/20 backdrop-blur-lg flex items-center justify-center shadow-2xl">
+              <i className="fas fa-brain text-6xl text-white"></i>
+            </div>
+            <h1 className="text-4xl font-bold mb-4 drop-shadow-lg">LogicTutor</h1>
+            <p className="text-lg opacity-90 mb-2 drop-shadow">Master Logical Reasoning</p>
+            <p className="text-sm opacity-75 drop-shadow">Build your proof skills, one step at a time</p>
+            <div className="mt-8 flex items-center justify-center gap-6">
+              <div className="flex flex-col items-center gap-2">
+                <i className="fas fa-book-open text-3xl drop-shadow-lg"></i>
+                <span className="text-sm drop-shadow">Interactive Lessons</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <i className="fas fa-trophy text-3xl drop-shadow-lg"></i>
+                <span className="text-sm drop-shadow">Earn XP & Level Up</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Auth Panel (right column) */}
-        <div className="p-8 flex flex-col justify-center text-[#060404]">
-          <h2 className="text-3xl font-bold mb-6 text-center">
-            {isAdminMode ? "Admin Access" : (isLogin ? "Welcome Back" : "Create Account")}
-          </h2>
+        {/* Right Panel - Form */}
+        <div className="p-6 sm:p-8 md:p-10 flex flex-col justify-center text-[#060404] bg-white">
+          {/* Mobile Logo */}
+          <div className="md:hidden flex items-center justify-center mb-6">
+            <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[#68ba4a] to-[#8baab1] flex items-center justify-center shadow-lg">
+              <i className="fas fa-brain text-3xl text-white"></i>
+            </div>
+          </div>
+
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-3 bg-linear-to-r from-[#68ba4a] to-[#8baab1] bg-clip-text text-transparent">
+              {isAdminMode ? "Admin Access" : (isLogin ? "Welcome Back" : "Get Started")}
+            </h2>
+            <p className="text-sm text-[#060404]/60">
+              {isAdminMode
+                ? "Admin login for system management"
+                : (isLogin
+                  ? "Sign in to continue your learning journey"
+                  : "Create your account and start mastering logic")}
+            </p>
+          </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
-            {/* Full name only shown on Sign Up (not in admin mode) */}
+            {/* Name inputs for signup */}
             {!isLogin && !isAdminMode && (
-             <>
-              <input
-                name="firstname"
-                type="text"
-                placeholder="first name"
-                value={formData.firstname}
-                onChange={(e) => setFormData({ ...formData, firstname: e.target.value })}
-                className="w-full p-3 rounded-lg border border-[#b3ccb8] focus:outline-none focus:ring-2 focus:ring-[#68ba4a]"
-              />
-              <input
-                name="lastname"
-                type="text"
-                placeholder="last name"
-                value={formData.lastname}
-                onChange={(e) => setFormData({ ...formData, lastname: e.target.value })}
-                className="w-full p-3 rounded-lg border border-[#b3ccb8] focus:outline-none focus:ring-2 focus:ring-[#68ba4a]"
-              />
-             </>
-              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8baab1]">
+                    <i className="fas fa-user"></i>
+                  </div>
+                  <input
+                    name="firstname"
+                    type="text"
+                    placeholder="First name"
+                    value={formData.firstname}
+                    onChange={(e) => setFormData({ ...formData, firstname: e.target.value })}
+                    className="w-full pl-11 pr-4 py-3.5 rounded-xl border-2 border-[#e8f5e9] focus:outline-none focus:border-[#68ba4a] focus:ring-2 focus:ring-[#68ba4a]/20 transition-all bg-[#f8faf9] hover:bg-white"
+                  />
+                </div>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8baab1]">
+                    <i className="fas fa-user"></i>
+                  </div>
+                  <input
+                    name="lastname"
+                    type="text"
+                    placeholder="Last name"
+                    value={formData.lastname}
+                    onChange={(e) => setFormData({ ...formData, lastname: e.target.value })}
+                    className="w-full pl-11 pr-4 py-3.5 rounded-xl border-2 border-[#e8f5e9] focus:outline-none focus:border-[#68ba4a] focus:ring-2 focus:ring-[#68ba4a]/20 transition-all bg-[#f8faf9] hover:bg-white"
+                  />
+                </div>
+              </div>
             )}
 
-            {/* Email field hidden in admin mode */}
-            {!isAdminMode && (
-              <input
-                name="email"
-                type="email"
-                placeholder="Email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full p-3 rounded-lg border border-[#b3ccb8] focus:outline-none focus:ring-2 focus:ring-[#68ba4a]"
-              />
-            )}
-
-            {/* Email field in admin mode */}
-            {isAdminMode && (
-              <input
-                name="email"
-                type="email"
-                placeholder="Admin Email (any email works)"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full p-3 rounded-lg border border-[#b3ccb8] focus:outline-none focus:ring-2 focus:ring-[#68ba4a]"
-              />
-            )}
-
+            {/* Email field */}
             <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8baab1]">
+                <i className={`fas ${isAdminMode ? 'fa-user-shield' : 'fa-envelope'}`}></i>
+              </div>
+              <input
+                name="email"
+                type="email"
+                placeholder={isAdminMode ? "Admin Email" : "Email address"}
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full pl-11 pr-4 py-3.5 rounded-xl border-2 border-[#e8f5e9] focus:outline-none focus:border-[#68ba4a] focus:ring-2 focus:ring-[#68ba4a]/20 transition-all bg-[#f8faf9] hover:bg-white"
+              />
+            </div>
+
+            {/* Password field */}
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8baab1]">
+                <i className="fas fa-lock"></i>
+              </div>
               <input
                 name="password"
                 type={showPassword ? "text" : "password"}
@@ -157,64 +221,53 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
                 required
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full pr-20 p-3 rounded-lg border border-[#b3ccb8] focus:outline-none focus:ring-2 focus:ring-[#68ba4a]"
+                className="w-full pl-11 pr-12 py-3.5 rounded-xl border-2 border-[#e8f5e9] focus:outline-none focus:border-[#68ba4a] focus:ring-2 focus:ring-[#68ba4a]/20 transition-all bg-[#f8faf9] hover:bg-white"
               />
 
               <button
                 type="button"
                 aria-pressed={showPassword}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                onClick={() => setShowPassword((s) => !s)}
-                className={`absolute top-1/2 right-2 -translate-y-1/2 p-2 rounded-md border transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${
-                  showPassword ? "bg-[var(--primary)] text-white border-transparent" : "bg-white/70 text-[var(--text)] border-transparent hover:bg-white/90"
-                }`}
+                onClick={() => setShowPassword(!showPassword)}
+                className={`absolute top-1/2 right-3 -translate-y-1/2 p-2 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-[#68ba4a]/30 ${showPassword
+                  ? "text-[#68ba4a] hover:bg-[#68ba4a]/10"
+                  : "text-[#8baab1] hover:bg-[#8baab1]/10"
+                  }`}
               >
-                {/* Eye / Eye-off icons */}
-                {showPassword ? (
-                  // Eye-off (visible state)
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-5 h-5">
-                    <path strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
-                    <path strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M10.58 10.58a3 3 0 0 0 4.24 4.24" />
-                    <path strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M14.12 14.12C16.06 13.01 17.5 11.16 18.5 9.5 16.5 6 12 4 8 4c-1.2 0-2.36.2-3.43.6" />
-                  </svg>
-                ) : (
-                  // Eye (hidden state)
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-5 h-5">
-                    <path strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M2.5 12S5.5 6 12 6s9.5 6 9.5 6-3 6-9.5 6S2.5 12 2.5 12z" />
-                    <circle cx="12" cy="12" r="3" strokeWidth="1.5" />
-                  </svg>
-                )}
+                <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
               </button>
             </div>
 
-            {/* Primary submit button */}
+            {/* Submit button */}
             <button
               type="submit"
-              className="w-full p-3 rounded-lg bg-[#68ba4a] text-white font-semibold hover:opacity-90 transition"
+              className="w-full p-4 rounded-xl bg-linear-to-r from-[#68ba4a] to-[#7cc55f] text-white font-bold text-lg hover:from-[#5ca03e] hover:to-[#68ba4a] transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
-              {isAdminMode ? "Admin Login" : (isLogin ? "Sign In" : "Sign Up")}
+              <span className="flex items-center justify-center gap-2">
+                <i className={`fas ${isLogin ? 'fa-sign-in-alt' : 'fa-user-plus'}`}></i>
+                {isAdminMode ? "Admin Login" : (isLogin ? "Sign In" : "Create Account")}
+              </span>
             </button>
 
+            {/* Google Login - Only for non-admin */}
             {!isAdminMode && (
               <>
-                <div className="text-center text-sm text-[#060404]/70">or</div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-linear-to-r from-transparent via-[#e8f5e9] to-transparent"></div>
+                  <span className="text-xs text-[#060404]/50 font-medium">OR CONTINUE WITH</span>
+                  <div className="flex-1 h-px bg-linear-to-r from-transparent via-[#e8f5e9] to-transparent"></div>
+                </div>
 
-                {/* Google Login - make this type=button so it doesn't submit the form */}
                 <button
                   type="button"
-                  onClick={() => {
-                    // TODO: wire this to your Google OAuth popup logic
-                    // eslint-disable-next-line no-console
-                    console.log("Google login clicked");
-                  }}
-                  className="w-full p-3 rounded-lg border border-[#8baab1] text-[#060404] font-medium hover:bg-[#8baab1]/20 transition"
+                  onClick={() => console.log("Google login clicked")}
+                  className="w-full p-4 rounded-xl border-2 border-[#e8f5e9] text-[#060404] font-semibold hover:bg-[#f8faf9] hover:border-[#8baab1] transition-all shadow-sm hover:shadow-md"
                 >
-                  <div className="flex items-center justify-center space-x-2">
-                    {/* Google Logo */}
+                  <div className="flex items-center justify-center space-x-3">
                     <img
                       src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png"
                       alt="Google"
-                      className="w-5 h-5"
+                      className="w-6 h-6"
                     />
                     <span>Continue with Google</span>
                   </div>
@@ -223,40 +276,56 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
             )}
           </form>
 
-          {/* Toggle between Login and Signup. Put type=button to avoid submitting when clicked */}
-          {!isAdminMode ? (
-            <p className="text-center text-sm mt-4 text-[#060404]/80">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-              <button
-                type="button"
-                onClick={toggleAuthMode}
-                className="text-[#68ba4a] font-semibold hover:underline"
-              >
-                {isLogin ? "Sign Up" : "Sign In"}
-              </button>
-            </p>
-          ) : (
-            <p className="text-center text-sm mt-4 text-[#060404]/80">
-              <button
-                type="button"
-                onClick={() => setIsAdminMode(false)}
-                className="text-[#68ba4a] font-semibold hover:underline"
-              >
-                Back to Student Login
-              </button>
-            </p>
-          )}
+          {/* Footer Links */}
+          <div className="mt-6 space-y-3">
+            {!isAdminMode ? (
+              <p className="text-center text-sm text-[#060404]/70">
+                {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+                <button
+                  type="button"
+                  onClick={toggleAuthMode}
+                  className="text-[#68ba4a] hover:text-[#5ca03e] cursor-pointer transition-colors"
+                >
+                  {isLogin ? "Sign Up" : "Sign In"}
+                </button>
+              </p>
+            ) : (
+              <p className="text-center text-sm text-[#060404]/70">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAdminMode(false);
+                    setFormData({ firstname: "", lastname: "", email: "", password: "" });
+                  }}
+                  className="text-[#68ba4a] font-bold hover:text-[#5ca03e] underline decoration-2 underline-offset-2 transition-colors"
+                >
+                  <i className="fas fa-arrow-left mr-1"></i>
+                  Back to Student Login
+                </button>
+              </p>
+            )}
 
-          {/* Admin login button */}
-          {!isAdminMode && (
-            <button
-              type="button"
-              onClick={() => setIsAdminMode(true)}
-              className="w-full mt-4 p-3 rounded-lg border border-[#8baab1] text-[#060404] font-medium hover:bg-[#8baab1]/20 transition"
-            >
-              🔧 Admin Access
-            </button>
-          )}
+            <Link to={'/'} className="text-sm text-[#060404]/70 hover:text-[#68ba4a] transition-colors text-center block">
+              Back to <span className="">Landing Page</span>
+            </Link>
+
+            {/* Admin Access Button */}
+            {/* {!isAdminMode && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAdminMode(true);
+                  setFormData({ firstname: "", lastname: "", email: "", password: "" });
+                }}
+                className="w-full p-3.5 rounded-xl border-2 border-[#8baab1] text-[#060404] font-semibold hover:bg-[#8baab1] hover:text-white transition-all shadow-sm hover:shadow-md group"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <i className="fas fa-user-shield group-hover:scale-110 transition-transform"></i>
+                  Admin Access
+                </span>
+              </button>
+            )} */}
+          </div>
         </div>
       </div>
     </div>

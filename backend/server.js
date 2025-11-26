@@ -9,12 +9,27 @@ import scoreCalcRouter from "./routes/scores-routes.js";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger.js";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(cookieParser());
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:3000",
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 // swagger ui
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));

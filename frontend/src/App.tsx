@@ -1,15 +1,27 @@
 // src/App.tsx
 import { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import AuthPage from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/AuthPage";
-import Dashboard from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/Dashboard";
-import LessonsPage from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/LessonsPage";
-import QuizzesPage from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/QuizzesPage";
-import GamesPage from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/GamesPage";
-import LessonDetailPage from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/LessonDetailPage";
-import QuizInterface from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/QuizInterface";
-import GameInterface from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/GameInterface";
-import AdminPage from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/AdminPage";
+// import AuthPage from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/AuthPage";
+// import Dashboard from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/Dashboard";
+// import LessonsPage from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/LessonsPage";
+// import QuizzesPage from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/QuizzesPage";
+// import GamesPage from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/GamesPage";
+// import LessonDetailPage from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/LessonDetailPage";
+// import QuizInterface from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/QuizInterface";
+// import GameInterface from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/GameInterface";
+// import AdminPage from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/AdminPage";
+
+import AuthPage from "../src/pages/AuthPage";
+import Dashboard from "../src/pages/Dashboard";
+import LessonsPage from "../src/pages/LessonsPage";
+import QuizzesPage from "../src/pages/QuizzesPage";
+import GamesPage from "../src/pages/GamesPage";
+import LessonDetailPage from "../src/pages/LessonDetailPage";
+import QuizInterface from "../src/pages/QuizInterface";
+import GameInterface from "../src/pages/GameInterface";
+import AdminPage from "../src/pages/AdminPage";
+import { useAuth } from "./context/AuthContext";
+import LandingPage from "./pages/LandingPage";
 
 interface UserStats {
   level: number;
@@ -18,8 +30,11 @@ interface UserStats {
 }
 
 const App = () => {
-  const [studentName, setStudentName] = useState<string | null>(null);
+  const { user, loading } = useAuth();
   const [userStats, setUserStats] = useState<Record<string, UserStats>>({});
+
+  // Get student name from authenticated user
+  const studentName = user ? `${user.firstname || user.email.split('@')[0]}` : null;
 
   // Load persisted stats from localStorage on mount
   useEffect(() => {
@@ -28,6 +43,7 @@ const App = () => {
       if (raw) setUserStats(JSON.parse(raw));
     } catch (e) {
       // ignore
+      console.log(e)
     }
   }, []);
 
@@ -37,50 +53,40 @@ const App = () => {
       localStorage.setItem("jek_userStats", JSON.stringify(userStats));
     } catch (e) {
       // ignore
+      console.log(e)
     }
   }, [userStats]);
 
-  const handleLogin = (name: string) => {
-    const normalizedName = name || "Student";
-    setStudentName(normalizedName);
-    
-    // Initialize stats for new users on first login
-    if (!userStats[normalizedName]) {
-      setUserStats({
-        ...userStats,
-        [normalizedName]: {
-          level: 0,
-          xp: 0,
-          completedLessons: [],
-        },
-      });
-    }
-  };
+  const isAuthed = !!user;
 
-  const handleLogout = () => {
-    setStudentName(null);
-  };
-
-  const isAuthed = !!studentName;
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <Routes>
       {/* Login / Sign up */}
-      <Route path="/" element={<AuthPage onLogin={handleLogin} />} />
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/auth-page" element={<AuthPage />} />
 
       {/* Protected: Dashboard */}
       <Route
         path="/dashboard"
         element={
-          isAuthed ? (
+          isAuthed && studentName ? (
             <Dashboard
-              studentName={studentName!}
-              onLogout={handleLogout}
-              userStats={userStats[studentName!] || { level: 0, xp: 0, completedLessons: [] }}
-              onUpdateStats={(stats: UserStats) => setUserStats({ ...userStats, [studentName!]: stats })}
+              studentName={studentName}
+              onLogout={() => { }} // Logout is handled by AuthContext
+              userStats={userStats[studentName] || { level: 0, xp: 0, completedLessons: [] }}
+              onUpdateStats={(stats: UserStats) => setUserStats({ ...userStats, [studentName]: stats })}
             />
           ) : (
-            <Navigate to="/" replace />
+            <Navigate to="/auth-page" replace />
           )
         }
       />
@@ -89,14 +95,14 @@ const App = () => {
       <Route
         path="/lessons"
         element={
-          isAuthed ? (
-            <LessonsPage 
-              studentName={studentName!}
-              userStats={userStats[studentName!] || { level: 0, xp: 0, completedLessons: [] }}
-              onUpdateStats={(stats) => setUserStats({ ...userStats, [studentName!]: stats })}
+          isAuthed && studentName ? (
+            <LessonsPage
+              studentName={studentName}
+              userStats={userStats[studentName] || { level: 0, xp: 0, completedLessons: [] }}
+              onUpdateStats={(stats) => setUserStats({ ...userStats, [studentName]: stats })}
             />
           ) : (
-            <Navigate to="/" replace />
+            <Navigate to="/auth-page" replace />
           )
         }
       />
@@ -105,14 +111,14 @@ const App = () => {
       <Route
         path="/lesson/:id"
         element={
-          isAuthed ? (
-            <LessonDetailPage 
-              studentName={studentName!}
-              userStats={userStats[studentName!] || { level: 0, xp: 0, completedLessons: [] }}
-              onUpdateStats={(stats) => setUserStats({ ...userStats, [studentName!]: stats })}
+          isAuthed && studentName ? (
+            <LessonDetailPage
+              studentName={studentName}
+              userStats={userStats[studentName] || { level: 0, xp: 0, completedLessons: [] }}
+              onUpdateStats={(stats) => setUserStats({ ...userStats, [studentName]: stats })}
             />
           ) : (
-            <Navigate to="/" replace />
+            <Navigate to="/auth-page" replace />
           )
         }
       />
@@ -121,14 +127,14 @@ const App = () => {
       <Route
         path="/quizzes"
         element={
-          isAuthed ? (
+          isAuthed && studentName ? (
             <QuizzesPage
-              studentName={studentName!}
-              userStats={userStats[studentName!] || { level: 0, xp: 0, completedLessons: [] }}
-              onUpdateStats={(stats: UserStats) => setUserStats({ ...userStats, [studentName!]: stats })}
+              studentName={studentName}
+              userStats={userStats[studentName] || { level: 0, xp: 0, completedLessons: [] }}
+              onUpdateStats={(stats: UserStats) => setUserStats({ ...userStats, [studentName]: stats })}
             />
           ) : (
-            <Navigate to="/" replace />
+            <Navigate to="/auth-page" replace />
           )
         }
       />
@@ -137,14 +143,14 @@ const App = () => {
       <Route
         path="/quiz/:id"
         element={
-          isAuthed ? (
+          isAuthed && studentName ? (
             <QuizInterface
-              studentName={studentName!}
-              userStats={userStats[studentName!] || { level: 0, xp: 0, completedLessons: [] }}
-              onUpdateStats={(stats: UserStats) => setUserStats({ ...userStats, [studentName!]: stats })}
+              studentName={studentName}
+              userStats={userStats[studentName] || { level: 0, xp: 0, completedLessons: [] }}
+              onUpdateStats={(stats: UserStats) => setUserStats({ ...userStats, [studentName]: stats })}
             />
           ) : (
-            <Navigate to="/" replace />
+            <Navigate to="/auth-page" replace />
           )
         }
       />
@@ -153,14 +159,14 @@ const App = () => {
       <Route
         path="/games"
         element={
-          isAuthed ? (
+          isAuthed && studentName ? (
             <GamesPage
-              studentName={studentName!}
-              userStats={userStats[studentName!] || { level: 0, xp: 0, completedLessons: [] }}
-              onUpdateStats={(stats: UserStats) => setUserStats({ ...userStats, [studentName!]: stats })}
+              studentName={studentName}
+              userStats={userStats[studentName] || { level: 0, xp: 0, completedLessons: [] }}
+              onUpdateStats={(stats: UserStats) => setUserStats({ ...userStats, [studentName]: stats })}
             />
           ) : (
-            <Navigate to="/" replace />
+            <Navigate to="/auth-page" replace />
           )
         }
       />
@@ -169,14 +175,14 @@ const App = () => {
       <Route
         path="/game/:id"
         element={
-          isAuthed ? (
+          isAuthed && studentName ? (
             <GameInterface
-              studentName={studentName!}
-              userStats={userStats[studentName!] || { level: 0, xp: 0, completedLessons: [] }}
-              onUpdateStats={(stats: UserStats) => setUserStats({ ...userStats, [studentName!]: stats })}
+              studentName={studentName}
+              userStats={userStats[studentName] || { level: 0, xp: 0, completedLessons: [] }}
+              onUpdateStats={(stats: UserStats) => setUserStats({ ...userStats, [studentName]: stats })}
             />
           ) : (
-            <Navigate to="/" replace />
+            <Navigate to="/auth-page" replace />
           )
         }
       />
