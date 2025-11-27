@@ -5,7 +5,9 @@ import { useAuth } from "../context/AuthContext";
 export default function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+
+  const studentAvatar = user?.avatar ? `${import.meta.env.VITE_API_URL}${user.avatar}` : null;
 
   // const handleGetStarted = () => {
   //   navigate("/auth");
@@ -14,6 +16,12 @@ export default function Header() {
 
   const handleDashboard = () => {
     navigate("/dashboard");
+    setDropdownOpen(false);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
     setDropdownOpen(false);
   };
 
@@ -49,7 +57,11 @@ export default function Header() {
             >
               {user ? (
                 <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-linear-to-br from-[#68ba4a] to-[#8baab1] text-white flex items-center justify-center font-bold shadow-md">
-                  {user.firstname?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "U"}
+                  {studentAvatar ? (
+                    <img src={studentAvatar} alt="User Avatar" className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    user.firstname?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "U"
+                  )}
                 </div>
               ) : (
                 <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#e8f5e9] text-[#8baab1] flex items-center justify-center shadow-md">
@@ -80,10 +92,17 @@ export default function Header() {
                       </div>
                       <button
                         onClick={handleDashboard}
-                        className="w-full text-left px-4 py-3 hover:bg-[#f8faf9] transition-colors flex items-center gap-3 text-[#060404]"
+                        className="w-full text-left px-4 py-3 hover:bg-[#f8faf9] transition-colors flex items-center gap-3 text-[#060404] hov"
                       >
                         <i className="fas fa-home text-[#68ba4a]"></i>
                         <span className="font-medium">Dashboard</span>
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-3 hover:bg-red-100 transition-colors flex items-center gap-3 text-[#060404]"
+                      >
+                        <i className="fas fa-sign-out-alt text-red-500 mt-0.5"></i>
+                        <span className="font-medium text-red-500">Logout</span>
                       </button>
                     </>
                   ) : (

@@ -6,7 +6,7 @@ import {
   signRefreshToken,
   verifyRefreshToken,
 } from "../helpers/jwt.js";
-
+import { deleteOldAvatar } from "../config/multer.js";
 
 const saltRound = 10;
 
@@ -172,35 +172,81 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// controller to update user profile
+// controller to upload/update user avatar
+export const uploadUserAvatar = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: "No file uploaded",
+      });
+    }
+
+    // Get user's current avatar to delete it
+    const [userRows] = await db.query("SELECT avatar FROM users WHERE id = ?", [
+      userId,
+    ]);
+
+    if (userRows.length > 0 && userRows[0].avatar) {
+      // Delete old avatar file
+      deleteOldAvatar(userRows[0].avatar);
+    }
+
+    // Generate avatar URL
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+    // Update user's avatar in database
+    await db.query("UPDATE users SET avatar = ? WHERE id = ?", [
+      avatarUrl,
+      userId,
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Avatar uploaded successfully!✅",
+      avatarUrl,
+    });
+  } catch (err) {
+    console.error("Failed to upload avatar:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to upload avatar",
+    });
+  }
+};
+
+// controller to update user profile (without avatar)
 export const updateUserProfile = async (req, res) => {
-  const { firstname, lastname, avatar } = req.body;
+  const { firstname, lastname } = req.body;
   const userId = req.user.id;
 
   // check if required fields were provided
   if (!firstname || !lastname) {
     return res.status(400).json({
       success: false,
-      error: "Firstname, Lastname are required!",
+      error: "Firstname and Lastname are required!",
     });
   }
 
   try {
     const [result] = await db.query(
-      "UPDATE users SET firstname = ?, lastname = ?, avatar = ? WHERE id = ?",
-      [firstname, lastname, avatar, userId]
+      "UPDATE users SET firstname = ?, lastname = ? WHERE id = ?",
+      [firstname, lastname, userId]
     );
+
     if (result.affectedRows === 0) {
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
         error: "User not found in database",
       });
-    } else {
-      return res.status(200).json({
-        success: true,
-        message: "User profile updated successfully!✅",
-      });
     }
+
+    return res.status(200).json({
+      success: true,
+      message: "User profile updated successfully!✅",
+    });
   } catch (err) {
     console.error("Failed updating user profile:", err);
     return res.status(500).json({
@@ -278,7 +324,6 @@ export const changePassword = async (req, res) => {
 // controller to delete user from the database
 export const deleteUser = async (req, res) => {
   const userId = req.user.id;
-
   const { password } = req.body;
 
   if (!password) {
@@ -288,12 +333,12 @@ export const deleteUser = async (req, res) => {
     });
   }
 
-  // provide a password to verify deletion
   try {
     const [rows] = await db.query(
-      "SELECT password_hash FROM users WHERE id = ?",
+      "SELECT password_hash, avatar FROM users WHERE id = ?",
       [userId]
     );
+
     if (rows.length === 0) {
       return res.status(404).json({
         success: false,
@@ -302,7 +347,8 @@ export const deleteUser = async (req, res) => {
     }
 
     const user = rows[0];
-    //comfirm the password is valid
+
+    // Confirm the password is valid
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       return res.status(401).json({
@@ -311,7 +357,14 @@ export const deleteUser = async (req, res) => {
       });
     }
 
+    // Delete user's avatar file if exists
+    if (user.avatar) {
+      deleteOldAvatar(user.avatar);
+    }
+
+    // Delete user from database
     const [result] = await db.query("DELETE FROM users WHERE id = ?", [userId]);
+
     if (result.affectedRows === 0) {
       return res.status(500).json({
         success: false,

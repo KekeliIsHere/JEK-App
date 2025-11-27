@@ -1,6 +1,11 @@
 // src/App.tsx
 import { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import AOS from 'aos';
+import 'aos/dist/aos.css';
+import ScrollToTop from "./components/ScrollToTop";
+
 // import AuthPage from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/AuthPage";
 // import Dashboard from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/Dashboard";
 // import LessonsPage from "c:/Users/agblo/Downloads/JEK-App/frontend/src/pages/LessonsPage";
@@ -19,8 +24,8 @@ import GamesPage from "../src/pages/GamesPage";
 import LessonDetailPage from "../src/pages/LessonDetailPage";
 import QuizInterface from "../src/pages/QuizInterface";
 import GameInterface from "../src/pages/GameInterface";
-import AdminPage from "../src/pages/AdminPage";
-import { useAuth } from "./context/AuthContext";
+import SettingsPage from "./pages/SettingsPage";
+//import AdminPage from "../src/pages/AdminPage";
 import LandingPage from "./pages/LandingPage";
 
 interface UserStats {
@@ -29,12 +34,33 @@ interface UserStats {
   completedLessons: string[];
 }
 
-const App = () => {
+function App() {
+  // Initialize AOS
+  useEffect(() => {
+    AOS.init({
+      duration: 800,
+      easing: 'ease-in-out',
+      once: true,
+      mirror: false,
+      offset: 100,
+    });
+  }, []);
+
+  return (
+    <AuthProvider>
+      <ScrollToTop />
+      <AppRoutes />
+    </AuthProvider>
+  );
+}
+
+function AppRoutes() {
   const { user, loading } = useAuth();
   const [userStats, setUserStats] = useState<Record<string, UserStats>>({});
 
   // Get student name from authenticated user
   const studentName = user ? `${user.firstname || user.email.split('@')[0]}` : null;
+  const studentAvatar = user?.avatar ? `${import.meta.env.VITE_API_URL}${user.avatar}` : null;
 
   // Load persisted stats from localStorage on mount
   useEffect(() => {
@@ -84,6 +110,7 @@ const App = () => {
               onLogout={() => { }} // Logout is handled by AuthContext
               userStats={userStats[studentName] || { level: 0, xp: 0, completedLessons: [] }}
               onUpdateStats={(stats: UserStats) => setUserStats({ ...userStats, [studentName]: stats })}
+              studentAvatar={studentAvatar}
             />
           ) : (
             <Navigate to="/auth-page" replace />
@@ -155,6 +182,38 @@ const App = () => {
         }
       />
 
+      {/* Protected: Section-based Quiz Interface */}
+      <Route
+        path="/quiz/section/:sectionId"
+        element={
+          isAuthed && studentName ? (
+            <QuizInterface
+              studentName={studentName}
+              userStats={userStats[studentName] || { level: 0, xp: 0, completedLessons: [] }}
+              onUpdateStats={(stats: UserStats) => setUserStats({ ...userStats, [studentName]: stats })}
+            />
+          ) : (
+            <Navigate to="/auth-page" replace />
+          )
+        }
+      />
+
+      {/* Protected: Lesson-based Quiz Interface */}
+      <Route
+        path="/quiz/lesson/:id"
+        element={
+          isAuthed && studentName ? (
+            <QuizInterface
+              studentName={studentName}
+              userStats={userStats[studentName] || { level: 0, xp: 0, completedLessons: [] }}
+              onUpdateStats={(stats: UserStats) => setUserStats({ ...userStats, [studentName]: stats })}
+            />
+          ) : (
+            <Navigate to="/auth-page" replace />
+          )
+        }
+      />
+
       {/* Protected: Games */}
       <Route
         path="/games"
@@ -187,16 +246,28 @@ const App = () => {
         }
       />
 
-      {/* Admin Panel */}
+      {/* Protected: Settings */}
       <Route
+        path="/settings"
+        element={
+          isAuthed && studentName ? (
+            <SettingsPage studentName={user?.firstname || "Student"} />
+          ) : (
+            <Navigate to="/auth-page" replace />
+          )
+        }
+      />
+
+      {/* Admin Panel */}
+      {/* <Route
         path="/admin"
         element={<AdminPage studentName={studentName || "Admin"} />}
-      />
+      /> */}
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
-};
+}
 
 export default App;

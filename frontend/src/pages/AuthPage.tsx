@@ -1,13 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useAuth } from "../context/AuthContext";
+import api from "../services/api";
 import type { AxiosError } from "axios";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordMatch, setPasswordMatch] = useState<boolean | null>(null);
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -16,7 +18,21 @@ export default function AuthPage() {
     lastname: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
+
+  // Check password match whenever password or confirmPassword changes
+  useEffect(() => {
+    if (!isLogin && formData.confirmPassword) {
+      if (formData.password === formData.confirmPassword) {
+        setPasswordMatch(true);
+      } else {
+        setPasswordMatch(false);
+      }
+    } else {
+      setPasswordMatch(null);
+    }
+  }, [formData.password, formData.confirmPassword, isLogin]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,6 +44,51 @@ export default function AuthPage() {
           icon: "error",
           title: "Missing Information",
           text: "Please fill in your first and last name.",
+          confirmButtonColor: "#68ba4a",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+        });
+        return;
+      }
+
+      if (!formData.confirmPassword) {
+        Swal.fire({
+          icon: "error",
+          title: "Missing Information",
+          text: "Please confirm your password.",
+          confirmButtonColor: "#68ba4a",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+        });
+        return;
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        Swal.fire({
+          icon: "error",
+          title: "Password Mismatch",
+          text: "Passwords do not match. Please try again.",
+          confirmButtonColor: "#68ba4a",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+        });
+        return;
+      }
+
+      if (formData.password.length < 6) {
+        Swal.fire({
+          icon: "error",
+          title: "Weak Password",
+          text: "Password must be at least 6 characters long.",
           confirmButtonColor: "#68ba4a",
           toast: true,
           position: "top-end",
@@ -55,26 +116,63 @@ export default function AuthPage() {
     }
 
     try {
-      await login(formData.email, formData.password);
-      await Swal.fire({
-        icon: "success",
-        title: "Login Successful!",
-        text: "Welcome back to LogicTutor.",
-        confirmButtonColor: "#68ba4a",
-        toast: true,
-        position: "top-end",
-        showConfirmButton: false,
-        timer: 1500,
-        timerProgressBar: true,
-      });
-      navigate("/dashboard");
+      if (isLogin) {
+        // Login flow
+        await login(formData.email, formData.password);
+        await Swal.fire({
+          icon: "success",
+          title: "Login Successful!",
+          text: "Welcome back to LogicTutor.",
+          confirmButtonColor: "#68ba4a",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 1500,
+          timerProgressBar: true,
+        });
+        navigate("/dashboard");
+      } else {
+        // Signup flow
+        const response = await api.post("/user/signup", {
+          firstname: formData.firstname,
+          lastname: formData.lastname,
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (response.data.success) {
+          await Swal.fire({
+            icon: "success",
+            title: "Account Created!",
+            text: "Your account has been created successfully. Please login.",
+            confirmButtonColor: "#68ba4a",
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true,
+          });
+          // Switch to login mode and clear form
+          setIsLogin(true);
+          setFormData({
+            firstname: "",
+            lastname: "",
+            email: formData.email, // Keep email for convenience
+            password: "",
+            confirmPassword: "",
+          });
+        }
+      }
     } catch (err) {
-      console.error("Login failed!", err);
-      const axiosError = err as AxiosError<{ message?: string }>;
+      console.error(`${isLogin ? "Login" : "Signup"} failed!`, err);
+      const axiosError = err as AxiosError<{ error?: string; message?: string }>;
       await Swal.fire({
         icon: "error",
-        title: "Login Failed",
-        text: axiosError.response?.data?.message || "Invalid email and password. Please try again.",
+        title: `${isLogin ? "Login" : "Signup"} Failed`,
+        text:
+          axiosError.response?.data?.error ||
+          axiosError.response?.data?.message ||
+          `Failed to ${isLogin ? "login" : "create account"}. Please try again.`,
         confirmButtonColor: "#68ba4a",
         toast: true,
         position: "top-end",
@@ -87,14 +185,14 @@ export default function AuthPage() {
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
-    setFormData({ firstname: "", lastname: "", email: "", password: "" });
+    setFormData({ firstname: "", lastname: "", email: "", password: "", confirmPassword: "" });
     setShowPassword(false);
+    setPasswordMatch(null);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-[#f8faf9] via-[#e8f5e9] to-[#d8f0dd] p-4 sm:p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8faf9] via-[#e8f5e9] to-[#d8f0dd] p-4 sm:p-6">
       <div className="w-full max-w-6xl bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl border-2 border-[#e8f5e9] grid grid-cols-1 md:grid-cols-2 overflow-hidden">
-
         {/* Left Panel - Logo with Overlay */}
         <div className="hidden md:flex items-center justify-center relative overflow-hidden">
           {/* Background Image */}
@@ -102,13 +200,13 @@ export default function AuthPage() {
             src="/JEKlogo.png"
             alt="LogicTutor Logo"
             onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = '/vite.svg';
+              (e.currentTarget as HTMLImageElement).src = "/vite.svg";
             }}
             className="absolute inset-0 w-full h-full object-cover"
           />
 
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-linear-to-br from-green-400/20 via-[#8baab1]/85 to-green-400/30"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-green-400/20 via-[#8baab1]/85 to-green-400/30"></div>
 
           {/* Decorative Blur Elements */}
           <div className="absolute inset-0 opacity-10">
@@ -141,22 +239,22 @@ export default function AuthPage() {
         <div className="p-6 sm:p-8 md:p-10 flex flex-col justify-center text-[#060404] bg-white">
           {/* Mobile Logo */}
           <div className="md:hidden flex items-center justify-center mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-[#68ba4a] to-[#8baab1] flex items-center justify-center shadow-lg">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#68ba4a] to-[#8baab1] flex items-center justify-center shadow-lg">
               <i className="fas fa-brain text-3xl text-white"></i>
             </div>
           </div>
 
           {/* Header */}
           <div className="text-center mb-8">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-3 bg-linear-to-r from-[#68ba4a] to-[#8baab1] bg-clip-text text-transparent">
-              {isAdminMode ? "Admin Access" : (isLogin ? "Welcome Back" : "Get Started")}
+            <h2 className="text-3xl sm:text-4xl font-bold mb-3 bg-gradient-to-r from-[#68ba4a] to-[#8baab1] bg-clip-text text-transparent">
+              {isAdminMode ? "Admin Access" : isLogin ? "Welcome Back" : "Get Started"}
             </h2>
             <p className="text-sm text-[#060404]/60">
               {isAdminMode
                 ? "Admin login for system management"
-                : (isLogin
+                : isLogin
                   ? "Sign in to continue your learning journey"
-                  : "Create your account and start mastering logic")}
+                  : "Create your account and start mastering logic"}
             </p>
           </div>
 
@@ -196,7 +294,7 @@ export default function AuthPage() {
             {/* Email field */}
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8baab1]">
-                <i className={`fas ${isAdminMode ? 'fa-user-shield' : 'fa-envelope'}`}></i>
+                <i className={`fas ${isAdminMode ? "fa-user-shield" : "fa-envelope"}`}></i>
               </div>
               <input
                 name="email"
@@ -223,7 +321,6 @@ export default function AuthPage() {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="w-full pl-11 pr-12 py-3.5 rounded-xl border-2 border-[#e8f5e9] focus:outline-none focus:border-[#68ba4a] focus:ring-2 focus:ring-[#68ba4a]/20 transition-all bg-[#f8faf9] hover:bg-white"
               />
-
               <button
                 type="button"
                 aria-pressed={showPassword}
@@ -234,18 +331,65 @@ export default function AuthPage() {
                   : "text-[#8baab1] hover:bg-[#8baab1]/10"
                   }`}
               >
-                <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                <i className={`fas ${showPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
               </button>
             </div>
+
+            {/* Confirm Password field - Only for signup */}
+            {!isLogin && !isAdminMode && (
+              <div>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8baab1]">
+                    <i className="fas fa-lock"></i>
+                  </div>
+                  <input
+                    name="confirmPassword"
+                    type="password"
+                    placeholder="Confirm Password"
+                    required
+                    value={formData.confirmPassword}
+                    onChange={(e) =>
+                      setFormData({ ...formData, confirmPassword: e.target.value })
+                    }
+                    className={`w-full pl-11 pr-4 py-3.5 rounded-xl border-2 transition-all bg-[#f8faf9] hover:bg-white focus:outline-none ${passwordMatch === null
+                      ? "border-[#e8f5e9] focus:border-[#68ba4a] focus:ring-2 focus:ring-[#68ba4a]/20"
+                      : passwordMatch
+                        ? "border-green-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                        : "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+                      }`}
+                  />
+                </div>
+                {/* Password match indicator */}
+                {formData.confirmPassword && (
+                  <div className="mt-2 flex items-center gap-2">
+                    {passwordMatch ? (
+                      <>
+                        <i className="fas fa-check-circle text-green-500 text-sm"></i>
+                        <span className="text-xs text-green-600 font-medium">
+                          Passwords match
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-times-circle text-red-500 text-sm"></i>
+                        <span className="text-xs text-red-600 font-medium">
+                          Passwords do not match
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Submit button */}
             <button
               type="submit"
-              className="w-full p-4 rounded-xl bg-linear-to-r from-[#68ba4a] to-[#7cc55f] text-white font-bold text-lg hover:from-[#5ca03e] hover:to-[#68ba4a] transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              className="w-full p-4 rounded-xl bg-gradient-to-r from-[#68ba4a] to-[#7cc55f] text-white font-bold text-lg hover:from-[#5ca03e] hover:to-[#68ba4a] transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               <span className="flex items-center justify-center gap-2">
-                <i className={`fas ${isLogin ? 'fa-sign-in-alt' : 'fa-user-plus'}`}></i>
-                {isAdminMode ? "Admin Login" : (isLogin ? "Sign In" : "Create Account")}
+                <i className={`fas ${isLogin ? "fa-sign-in-alt" : "fa-user-plus"}`}></i>
+                {isAdminMode ? "Admin Login" : isLogin ? "Sign In" : "Create Account"}
               </span>
             </button>
 
@@ -253,9 +397,9 @@ export default function AuthPage() {
             {!isAdminMode && (
               <>
                 <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-linear-to-r from-transparent via-[#e8f5e9] to-transparent"></div>
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#e8f5e9] to-transparent"></div>
                   <span className="text-xs text-[#060404]/50 font-medium">OR CONTINUE WITH</span>
-                  <div className="flex-1 h-px bg-linear-to-r from-transparent via-[#e8f5e9] to-transparent"></div>
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#e8f5e9] to-transparent"></div>
                 </div>
 
                 <button
@@ -295,7 +439,13 @@ export default function AuthPage() {
                   type="button"
                   onClick={() => {
                     setIsAdminMode(false);
-                    setFormData({ firstname: "", lastname: "", email: "", password: "" });
+                    setFormData({
+                      firstname: "",
+                      lastname: "",
+                      email: "",
+                      password: "",
+                      confirmPassword: "",
+                    });
                   }}
                   className="text-[#68ba4a] font-bold hover:text-[#5ca03e] underline decoration-2 underline-offset-2 transition-colors"
                 >
@@ -305,26 +455,12 @@ export default function AuthPage() {
               </p>
             )}
 
-            <Link to={'/'} className="text-sm text-[#060404]/70 hover:text-[#68ba4a] transition-colors text-center block">
+            <Link
+              to={"/"}
+              className="text-sm text-[#060404]/70 hover:text-[#68ba4a] transition-colors text-center block"
+            >
               Back to <span className="">Landing Page</span>
             </Link>
-
-            {/* Admin Access Button */}
-            {/* {!isAdminMode && (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsAdminMode(true);
-                  setFormData({ firstname: "", lastname: "", email: "", password: "" });
-                }}
-                className="w-full p-3.5 rounded-xl border-2 border-[#8baab1] text-[#060404] font-semibold hover:bg-[#8baab1] hover:text-white transition-all shadow-sm hover:shadow-md group"
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <i className="fas fa-user-shield group-hover:scale-110 transition-transform"></i>
-                  Admin Access
-                </span>
-              </button>
-            )} */}
           </div>
         </div>
       </div>

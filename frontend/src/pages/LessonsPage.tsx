@@ -2,6 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
+import { useAuth } from "../context/AuthContext";
 
 interface UserStats {
   level: number;
@@ -25,71 +26,12 @@ interface Lesson {
 
 const LessonsPage = ({ studentName, userStats }: LessonsPageProps) => {
   const navigate = useNavigate();
+  const { fetchLessons } = useAuth();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Mock fetch function - replace with actual API call
-  const fetchLessons = async (): Promise<Lesson[]> => {
-    // Simulate API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          {
-            id: "props-conn",
-            title: "Propositions & Truth Values",
-            content: "What a proposition is and how we assign T or F. Learn the fundamentals of logical statements.",
-            order_index: 1,
-            is_active: true,
-          },
-          {
-            id: "sets-ops",
-            title: "Set Operations",
-            content: "Union, intersection, complement, difference, De Morgan's laws and more.",
-            order_index: 2,
-            is_active: true,
-          },
-          {
-            id: "connectives",
-            title: "Logical Connectives",
-            content: "¬, ∧, ∨, ⊕, →, ↔ and building compound statements.",
-            order_index: 3,
-            is_active: true,
-          },
-          {
-            id: "truth-tables",
-            title: "Truth Tables",
-            content: "Constructing truth tables and checking equivalence.",
-            order_index: 4,
-            is_active: true,
-          },
-          {
-            id: "conditionals",
-            title: "Conditionals & Variants",
-            content: "If–then, converse, inverse, contrapositive, and common mistakes.",
-            order_index: 5,
-            is_active: false,
-          },
-          {
-            id: "equivalence",
-            title: "Logical Equivalence",
-            content: "Using laws to rewrite statements and prove equivalence.",
-            order_index: 6,
-            is_active: false,
-          },
-          {
-            id: "inference",
-            title: "Rules of Inference",
-            content: "Modus ponens, modus tollens, and valid vs invalid arguments.",
-            order_index: 7,
-            is_active: false,
-          },
-        ]);
-      }, 500);
-    });
-  };
 
   useEffect(() => {
     async function loadLessons() {
@@ -103,7 +45,7 @@ const LessonsPage = ({ studentName, userStats }: LessonsPageProps) => {
       }
     }
     loadLessons();
-  }, []);
+  }, [fetchLessons]);
 
   const handleStartLesson = (id: string) => {
     navigate(`/lesson/${id}`);
@@ -123,7 +65,7 @@ const LessonsPage = ({ studentName, userStats }: LessonsPageProps) => {
       {/* Main content */}
       <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 md:ml-64">
         {/* Header */}
-        <header className="mb-6">
+        <header className="mb-6" data-aos="fade-down">
           <div className="flex items-center gap-3 mb-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -213,6 +155,8 @@ const LessonsPage = ({ studentName, userStats }: LessonsPageProps) => {
                 return (
                   <article
                     key={lesson.id}
+                    data-aos="fade-up"
+                    data-aos-delay={index * 50}
                     className={`relative bg-white rounded-2xl shadow-md border-2 transition-all duration-300 ${unlocked
                       ? "border-[#b3ccb8]/40 hover:border-[#68ba4a]/50 hover:shadow-xl"
                       : "border-gray-200 opacity-75"

@@ -1,6 +1,8 @@
 // src/pages/QuizInterface.tsx
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
+import api from "../services/api";
+import Swal from "sweetalert2";
 
 interface UserStats {
   level: number;
@@ -14,307 +16,390 @@ interface QuizInterfaceProps {
   onUpdateStats?: (stats: UserStats) => void;
 }
 
-interface Question {
+// interface Question {
+//   id: string;
+//   text: string;
+//   options: string[];
+//   correct: number;
+//   explanation: string;
+// }
+
+interface Quiz {
   id: string;
-  text: string;
-  options: string[];
-  correct: number;
-  explanation: string;
+  lesson_id: string;
+  section_id: string | null;
+  order_index: number;
+  question: string;
+  options: Record<string, string>;
+  correct_answer: string;
+  hint: string | null;
+}
+
+interface Answer {
+  quizId: string;
+  selected: string;
+}
+
+interface QuizCompletion {
+  lessonId: string;
+  completed: boolean;
+  score: number;
 }
 
 const QuizInterface = ({ studentName, userStats, onUpdateStats }: QuizInterfaceProps) => {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [score, setScore] = useState(0);
-  const [answered, setAnswered] = useState<number | null>(null);
-  const [showResult, setShowResult] = useState(false);
-  const [quizComplete, setQuizComplete] = useState(false);
-  const [appliedReward, setAppliedReward] = useState(false);
+  const { id, sectionId } = useParams<{ id: string; sectionId?: string }>();
+  const location = useLocation();
 
-  const defaultQuizzes: Record<string, { title: string; questions: Question[] }> = {
-    "logic-basics": {
-      title: "Logic Basics Quiz",
-      questions: [
-        {
-          id: "q1",
-          text: "Which of the following is a tautology?",
-          options: ["p ∧ ¬p", "p ∨ ¬p", "p ∧ q", "p → ¬p"],
-          correct: 1,
-          explanation:
-            "p ∨ ¬p is always true (the law of excluded middle). This is a tautology.",
-        },
-        {
-          id: "q2",
-          text: "What is the truth value of (T ∧ F)?",
-          options: ["True", "False", "Unknown", "Undefined"],
-          correct: 1,
-          explanation:
-            "A conjunction is only true when both parts are true. Since F is false, the result is false.",
-        },
-        {
-          id: "q3",
-          text: "Which statement is logically equivalent to p → q?",
-          options: ["q → p", "¬p ∨ q", "p ∨ q", "¬q → ¬p"],
-          correct: 1,
-          explanation:
-            "p → q is logically equivalent to ¬p ∨ q. Also equivalent to ¬q → ¬p (contrapositive).",
-        },
-        {
-          id: "q4",
-          text: "What is the negation of (p ∧ q)?",
-          options: ["¬p ∧ ¬q", "¬p ∨ ¬q", "p ∨ q", "¬(p ∧ q)"],
-          correct: 1,
-          explanation:
-            "By De Morgan's Law, ¬(p ∧ q) = ¬p ∨ ¬q. The negation of AND is OR with negated parts.",
-        },
-        {
-          id: "q5",
-          text: "Is (p → q) the same as (q → p)?",
-          options: ["Always", "Never", "Sometimes", "Not comparable"],
-          correct: 1,
-          explanation:
-            "No, they are not equivalent. p → q (if p then q) is not the same as q → p (if q then p). This second is called the converse.",
-        },
-      ],
-    },
-    "truth-tables": {
-      title: "Truth Tables Quiz",
-      questions: [
-        {
-          id: "q1",
-          text: "How many rows does a truth table for 3 variables have?",
-          options: ["3", "6", "8", "9"],
-          correct: 2,
-          explanation:
-            "A truth table with n variables has 2^n rows. With 3 variables: 2^3 = 8 rows.",
-        },
-        {
-          id: "q2",
-          text: "In a truth table for p ∨ q, when is the result TRUE?",
-          options: [
-            "Only when both are true",
-            "Only when both are false",
-            "When at least one is true",
-            "Never",
-          ],
-          correct: 2,
-          explanation:
-            "Disjunction (OR) is true when at least one of the disjuncts is true. It's false only when both are false.",
-        },
-        {
-          id: "q3",
-          text: "What does a contradiction look like in a truth table?",
-          options: [
-            "All true",
-            "All false",
-            "Mixed true and false",
-            "Unknown values",
-          ],
-          correct: 1,
-          explanation:
-            "A contradiction is always false, so all rows in its final column are false.",
-        },
-        {
-          id: "q4",
-          text: "Which formula is logically equivalent to ¬(¬p)?",
-          options: ["¬p", "p", "True", "False"],
-          correct: 1,
-          explanation:
-            "Double negation eliminates: ¬(¬p) = p. Negating twice returns to the original.",
-        },
-      ],
-    },
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState<Answer[]>([]);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [showResult, setShowResult] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const attemptNumber = 1;
+  const [startTime] = useState(Date.now());
+  const [submitting, setSubmitting] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  const { lessonId, sectionTitle, returnPath, lessonTitle } = location.state || {};
+
+  // Timer effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [startTime]);
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // allow admin-managed quizzes via localStorage
-  const stored = typeof window !== "undefined" ? localStorage.getItem("jek_quizzes") : null;
-  const quizzes = stored ? JSON.parse(stored) : defaultQuizzes;
+  // Fetch quizzes from backend
+  useEffect(() => {
+    async function loadQuizzes() {
+      try {
+        let endpoint = '';
+        if (sectionId) {
+          // Fetch quizzes for specific section
+          endpoint = `/quizzes/${lessonId || id}?sectionId=${sectionId}`;
+        } else {
+          // Fetch quizzes for entire lesson
+          endpoint = `/quizzes/${id}`;
+        }
 
-  const quiz = (quizzes as Record<string, { title: string; questions: Question[] }>)[id || ""] || (quizzes as any)["logic-basics"];
-  const questions = quiz.questions;
-  const isLastQuestion = currentQuestion === questions.length - 1;
+        const response = await api.get(endpoint);
 
-  const handleAnswer = (optionIndex: number) => {
-    setAnswered(optionIndex);
-    if (optionIndex === questions[currentQuestion].correct) {
-      setScore(score + 1);
+        if (response.data.success && response.data.quizzes.length > 0) {
+          setQuizzes(response.data.quizzes);
+        } else {
+          await Swal.fire({
+            icon: "info",
+            title: "No Quiz Available",
+            text: "There are no quizzes for this section yet.",
+            confirmButtonColor: "#68ba4a",
+          });
+          if (returnPath) {
+            navigate(returnPath, {
+              state: { quizCompleted: true, sectionId: sectionId || id },
+            });
+          } else {
+            navigate("/lessons");
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load quizzes:", error);
+        await Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Failed to load quiz. Please try again.",
+          confirmButtonColor: "#68ba4a",
+        });
+        navigate(returnPath || "/lessons");
+      } finally {
+        setLoading(false);
+      }
     }
+
+    loadQuizzes();
+  }, [id, sectionId, lessonId, returnPath, navigate]);
+
+  const currentQuiz = quizzes[currentQuestion];
+  const isLastQuestion = currentQuestion === quizzes.length - 1;
+
+  const handleAnswer = (optionKey: string) => {
+    setSelectedOption(optionKey);
+
+    // Store the answer
+    const newAnswers = [...answers];
+    const existingIndex = newAnswers.findIndex(a => a.quizId === currentQuiz.id);
+
+    if (existingIndex >= 0) {
+      newAnswers[existingIndex] = { quizId: currentQuiz.id, selected: optionKey };
+    } else {
+      newAnswers.push({ quizId: currentQuiz.id, selected: optionKey });
+    }
+
+    setAnswers(newAnswers);
     setShowResult(true);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (isLastQuestion) {
-      setQuizComplete(true);
+      await handleSubmitQuiz();
     } else {
       setCurrentQuestion(currentQuestion + 1);
-      setAnswered(null);
+      setSelectedOption(null);
       setShowResult(false);
     }
   };
 
-  // Apply XP reward once when quiz completes
-  useEffect(() => {
-    if (quizComplete && !appliedReward && (typeof window !== "undefined")) {
-      const percentage = Math.round((score / questions.length) * 100);
-      const passed = percentage >= 70;
-      const xpEarned = passed ? 75 : 25;
-      if (onUpdateStats && userStats) {
-        const updated: UserStats = {
-          ...userStats,
-          xp: userStats.xp + xpEarned,
-          level: Math.floor((userStats.xp + xpEarned) / 100),
-          completedLessons: userStats.completedLessons,
-        };
-        onUpdateStats(updated);
-      }
-      setAppliedReward(true);
-    }
-  }, [quizComplete, appliedReward]);
+  const handleSubmitQuiz = async () => {
+    if (submitting) return;
 
-  const handleRestart = () => {
-    setCurrentQuestion(0);
-    setScore(0);
-    setAnswered(null);
-    setShowResult(false);
-    setQuizComplete(false);
+    setSubmitting(true);
+
+    try {
+      const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
+
+      const response = await api.post("/quiz_submission/submit_quiz", {
+        sectionId: sectionId || id,
+        attemptNumber,
+        durationSeconds,
+        answers,
+      });
+
+      if (response.data.success) {
+        const { score, status, correctCount, totalQuestions } = response.data.submission;
+
+        // Calculate XP based on score
+        const xpEarned = status === "passed" ? 75 : 25;
+
+        // Update user stats
+        if (onUpdateStats && userStats) {
+          const updated: UserStats = {
+            ...userStats,
+            xp: userStats.xp + xpEarned,
+            level: Math.floor((userStats.xp + xpEarned) / 100),
+            completedLessons: userStats.completedLessons,
+          };
+          onUpdateStats(updated);
+        }
+
+        // Store completion in localStorage for quizzes page
+        if (!sectionId) {
+          const storedCompletions = localStorage.getItem("quiz_completions");
+          const completions = storedCompletions ? JSON.parse(storedCompletions) : [];
+
+          const existingIndex = completions.findIndex((c: QuizCompletion) => c.lessonId === id);
+          if (existingIndex >= 0) {
+            completions[existingIndex] = { lessonId: id, completed: true, score };
+          } else {
+            completions.push({ lessonId: id, completed: true, score });
+          }
+
+          localStorage.setItem("quiz_completions", JSON.stringify(completions));
+        }
+
+        await Swal.fire({
+          icon: status === "passed" ? "success" : "info",
+          title: status === "passed" ? "Quiz Passed!" : "Quiz Completed",
+          html: `
+            <div class="text-center">
+              <p class="text-2xl font-bold mb-2">${correctCount}/${totalQuestions}</p>
+              <p class="text-xl mb-2">${score}%</p>
+              <p class="text-sm text-gray-600 mb-1">Time: ${formatTime(durationSeconds)}</p>
+              <p class="text-sm text-gray-600">${status === "passed" ? "Great job! +75 XP" : "Keep practicing! +25 XP"}</p>
+            </div>
+          `,
+          confirmButtonColor: "#68ba4a",
+          confirmButtonText: returnPath ? "Continue" : "Back to Lessons",
+        });
+
+        // Navigate back with completion status
+        if (returnPath) {
+          navigate(returnPath, {
+            state: {
+              quizCompleted: true,
+              sectionId: sectionId || id,
+              quizScore: score,
+            },
+          });
+        } else {
+          navigate("/lessons");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to submit quiz:", error);
+      await Swal.fire({
+        icon: "error",
+        title: "Submission Failed",
+        text: "Failed to submit quiz. Please try again.",
+        confirmButtonColor: "#68ba4a",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const question = questions[currentQuestion];
-  const percentage = Math.round((score / questions.length) * 100);
-  const passed = percentage >= 70;
-
-  if (quizComplete) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-[#fbf9f9] text-[#060404] flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg border border-[#b3ccb8]/40 p-8 max-w-md w-full text-center">
-          <div className="mb-6">
-            {passed ? (
-              <div className="text-6xl mb-4">🎉</div>
-            ) : (
-              <div className="text-6xl mb-4">📚</div>
-            )}
-          </div>
-
-          <h1 className="text-3xl font-bold mb-2">Quiz Complete!</h1>
-
-          <div className="bg-[#f4f7f4] rounded-xl p-6 mb-6">
-            <p className="text-sm text-[#060404]/70 mb-2">Your Score</p>
-            <p className="text-5xl font-bold text-[#68ba4a] mb-2">
-              {score}/{questions.length}
-            </p>
-            <p className="text-2xl font-semibold text-[#8baab1]">{percentage}%</p>
-          </div>
-
-          <p className="text-lg font-semibold mb-6">
-            {passed ? (
-              <span className="text-[#68ba4a]">✅ You passed! Great work!</span>
-            ) : (
-              <span className="text-[#8baab1]">Keep practicing!</span>
-            )}
-          </p>
-
-          <div className="space-y-3">
-            <button
-              onClick={handleRestart}
-              className="w-full px-6 py-3 rounded-xl bg-[#68ba4a] text-white font-semibold hover:bg-[#5a9a3d] transition"
-            >
-              🔄 Try Again
-            </button>
-            <button
-              onClick={() => navigate("/quizzes")}
-              className="w-full px-6 py-3 rounded-xl bg-[#b3ccb8] text-[#060404] font-semibold hover:bg-[#a3bcb8] transition"
-            >
-              ← Back to Quizzes
-            </button>
-          </div>
-
-          <p className="text-sm text-[#060404]/70 mt-6">
-            {passed ? "+75 XP earned!" : "+25 XP earned"}
-          </p>
+      <div className="min-h-screen bg-[#fbf9f9] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <i className="fas fa-spinner fa-spin text-4xl text-[#68ba4a]"></i>
+          <p className="text-sm text-[#060404]/60">Loading quiz...</p>
         </div>
       </div>
     );
   }
 
+  if (quizzes.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#fbf9f9] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <i className="fas fa-clipboard-question text-5xl text-[#8baab1]/50"></i>
+          <p className="text-lg font-semibold text-[#060404]">No quizzes available</p>
+          <button
+            onClick={() => navigate(returnPath || "/lessons")}
+            className="px-6 py-3 rounded-xl bg-[#68ba4a] text-white font-semibold hover:bg-[#5a9a3d] transition"
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const isCorrect = selectedOption === currentQuiz.correct_answer;
+  const optionKeys = Object.keys(currentQuiz.options);
+
   return (
     <div className="min-h-screen bg-[#fbf9f9] text-[#060404]">
       {/* Header */}
-      <header className="bg-white border-b border-[#b3ccb8]/40 p-4 md:p-6">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">{quiz.title}</h1>
-            <p className="text-sm text-[#060404]/70 mt-1">Student: {studentName}</p>
+      <header className="bg-white border-b border-[#b3ccb8]/40 p-4 md:p-6" data-aos="fade-down">
+        <div className="max-w-4xl mx-auto">
+          <button
+            onClick={() => navigate(returnPath || "/lessons")}
+            className="text-[#68ba4a] hover:text-[#5a9a3d] font-semibold text-sm mb-3 flex items-center gap-1"
+          >
+            ← {returnPath ? "Back to Lesson" : "Back to Lessons"}
+          </button>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold">
+                {sectionTitle ? `Quiz: ${sectionTitle}` : lessonTitle ? `Quiz: ${lessonTitle}` : "Quiz"}
+              </h1>
+              <p className="text-sm text-[#060404]/70 mt-1">Student: {studentName}</p>
+            </div>
+            <div className="flex flex-col items-end gap-2">
+              {/* Timer */}
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#e8f5e9] to-[#f0f7f1] border border-[#b3ccb8]/40">
+                <i className="fas fa-clock text-[#68ba4a]"></i>
+                <span className="font-mono font-bold text-lg text-[#060404]">
+                  {formatTime(elapsedTime)}
+                </span>
+              </div>
+              {/* Question Counter */}
+              <div className="text-right">
+                <p className="text-sm text-[#060404]/70">Question</p>
+                <p className="text-2xl font-bold text-[#68ba4a]">
+                  {currentQuestion + 1}/{quizzes.length}
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-[#060404]/70">Question</p>
-            <p className="text-2xl font-bold text-[#68ba4a]">
-              {currentQuestion + 1}/{questions.length}
-            </p>
+
+          {/* Progress bar */}
+          <div className="mt-4">
+            <div className="w-full h-2 bg-[#e5f0e5] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-[#68ba4a] to-[#7cc55f] transition-all duration-300"
+                style={{
+                  width: `${((currentQuestion + 1) / quizzes.length) * 100}%`,
+                }}
+              />
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Progress bar */}
-      <div className="bg-white border-b border-[#b3ccb8]/40 px-4 md:px-8 py-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="w-full h-2 bg-[#e5f0e5] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#68ba4a] transition-all duration-300"
-              style={{
-                width: `${((currentQuestion + 1) / questions.length) * 100}%`,
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
       {/* Main content */}
       <main className="max-w-4xl mx-auto p-4 md:p-8">
         {/* Question */}
-        <section className="bg-white rounded-2xl shadow-md border border-[#b3ccb8]/40 p-6 md:p-8 mb-6">
-          <h2 className="text-xl md:text-2xl font-bold mb-8">{question.text}</h2>
+        <section
+          className="bg-white rounded-2xl shadow-md border border-[#b3ccb8]/40 p-6 md:p-8 mb-6"
+          data-aos="fade-up"
+        >
+          <h2 className="text-xl md:text-2xl font-bold mb-8">{currentQuiz.question}</h2>
 
           {/* Options */}
           <div className="space-y-3 mb-6">
-            {question.options.map((option, index) => (
+            {optionKeys.map((key, index) => (
               <button
-                key={index}
-                onClick={() => !showResult && handleAnswer(index)}
+                key={key}
+                data-aos="fade-right"
+                data-aos-delay={index * 50}
+                onClick={() => !showResult && handleAnswer(key)}
                 disabled={showResult}
-                className={`w-full text-left px-6 py-4 rounded-xl border-2 transition font-semibold ${
-                  answered === index
-                    ? index === question.correct
-                      ? "bg-[#68ba4a]/20 border-[#68ba4a] text-[#060404]"
+                className={`w-full text-left px-6 py-4 rounded-xl border-2 transition font-semibold ${selectedOption === key
+                    ? key === currentQuiz.correct_answer
+                      ? "bg-green-100 border-green-500 text-[#060404]"
                       : "bg-red-100 border-red-500 text-[#060404]"
-                    : index === question.correct && showResult
-                    ? "bg-[#68ba4a]/20 border-[#68ba4a] text-[#060404]"
-                    : "bg-white border-[#b3ccb8] hover:border-[#8baab1]"
-                } ${showResult ? "cursor-default" : "cursor-pointer hover:bg-[#f4f7f4]"}`}
+                    : key === currentQuiz.correct_answer && showResult
+                      ? "bg-green-100 border-green-500 text-[#060404]"
+                      : "bg-white border-[#b3ccb8] hover:border-[#8baab1]"
+                  } ${showResult ? "cursor-default" : "cursor-pointer hover:bg-[#f4f7f4]"}`}
               >
                 <span className="flex items-center gap-3">
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border border-current">
-                    {String.fromCharCode(65 + index)}
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-current font-bold">
+                    {key}
                   </span>
-                  {option}
-                  {answered === index && showResult && (
-                    <span className="ml-auto">
-                      {index === question.correct ? "✅" : "❌"}
+                  <span className="flex-1">{currentQuiz.options[key]}</span>
+                  {selectedOption === key && showResult && (
+                    <span className="ml-auto text-xl">
+                      {key === currentQuiz.correct_answer ? "✅" : "❌"}
                     </span>
                   )}
-                  {index === question.correct && showResult && answered !== index && (
-                    <span className="ml-auto">✓ Correct</span>
+                  {key === currentQuiz.correct_answer && showResult && selectedOption !== key && (
+                    <span className="ml-auto text-green-600 font-semibold">✓ Correct</span>
                   )}
                 </span>
               </button>
             ))}
           </div>
 
-          {/* Explanation */}
+          {/* Hint */}
+          {showResult && currentQuiz.hint && (
+            <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 mb-6">
+              <p className="font-semibold text-blue-700 mb-2 flex items-center gap-2">
+                <i className="fas fa-lightbulb"></i>
+                Hint:
+              </p>
+              <p className="text-sm text-[#060404]/80">{currentQuiz.hint}</p>
+            </div>
+          )}
+
+          {/* Result message */}
           {showResult && (
-            <div className="bg-[#f4f7f4] border-l-4 border-[#68ba4a] rounded-lg p-4 mb-6">
-              <p className="font-semibold text-[#68ba4a] mb-2">Explanation:</p>
-              <p className="text-sm text-[#060404]/80">{question.explanation}</p>
+            <div className={`border-l-4 rounded-lg p-4 mb-6 ${isCorrect
+              ? "bg-green-50 border-green-500"
+              : "bg-red-50 border-red-500"
+              }`}>
+              <p className={`font-semibold mb-2 ${isCorrect ? "text-green-700" : "text-red-700"
+                }`}>
+                {isCorrect ? "✓ Correct!" : "✗ Incorrect"}
+              </p>
+              <p className="text-sm text-[#060404]/80">
+                {isCorrect
+                  ? "Great job! You selected the right answer."
+                  : `The correct answer is ${currentQuiz.correct_answer}: ${currentQuiz.options[currentQuiz.correct_answer]}`
+                }
+              </p>
             </div>
           )}
 
@@ -322,23 +407,34 @@ const QuizInterface = ({ studentName, userStats, onUpdateStats }: QuizInterfaceP
           {showResult && (
             <button
               onClick={handleNext}
-              className="w-full px-6 py-3 rounded-xl bg-[#68ba4a] text-white font-semibold hover:bg-[#5a9a3d] transition"
+              disabled={submitting}
+              className="w-full px-6 py-3 rounded-xl bg-[#68ba4a] text-white font-semibold hover:bg-[#5a9a3d] transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {isLastQuestion ? "🏁 Finish Quiz" : "Next Question →"}
+              {submitting ? (
+                <>
+                  <i className="fas fa-spinner fa-spin"></i>
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <>
+                  <span>{isLastQuestion ? "Submit Quiz" : "Next Question"}</span>
+                  <i className={`fas ${isLastQuestion ? "fa-check-circle" : "fa-arrow-right"}`}></i>
+                </>
+              )}
             </button>
           )}
         </section>
 
-        {/* Score tracker */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Progress indicator */}
+        <div className="grid grid-cols-2 gap-4" data-aos="fade-up" data-aos-delay="100">
           <div className="bg-white rounded-xl p-4 border border-[#b3ccb8]/40">
-            <p className="text-xs text-[#060404]/70 uppercase tracking-wide">Correct</p>
-            <p className="text-2xl font-bold text-[#68ba4a]">{score}</p>
+            <p className="text-xs text-[#060404]/70 uppercase tracking-wide">Answered</p>
+            <p className="text-2xl font-bold text-[#68ba4a]">{answers.length}</p>
           </div>
           <div className="bg-white rounded-xl p-4 border border-[#b3ccb8]/40">
-            <p className="text-xs text-[#060404]/70 uppercase tracking-wide">Current</p>
+            <p className="text-xs text-[#060404]/70 uppercase tracking-wide">Remaining</p>
             <p className="text-2xl font-bold text-[#8baab1]">
-              {Math.round((score / (currentQuestion + 1)) * 100)}%
+              {quizzes.length - answers.length}
             </p>
           </div>
         </div>

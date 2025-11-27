@@ -10,8 +10,8 @@ export default function Footer() {
           {/* Logo and Description */}
           <div className="col-span-1 sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#68ba4a] to-[#8baab1] flex items-center justify-center shadow-lg">
-                <i className="fas fa-brain text-white text-2xl"></i>
+              <div className="w-12 h-12 flex items-center justify-center rounded-lg">
+                <img src="../public/JEKlogo.png" alt="" className=" rounded-lg"/>
               </div>
               <div>
                 <h3 className="text-xl font-bold bg-linear-to-r from-[#68ba4a] to-[#8baab1] bg-clip-text text-transparent">
@@ -111,7 +111,7 @@ export default function Footer() {
                     href="mailto:support@logictutor.com"
                     className="text-sm font-medium text-[#68ba4a] hover:underline"
                   >
-                    support@logictutor.com
+                    support@jekapp.com
                   </a>
                 </div>
               </li>
@@ -120,11 +120,19 @@ export default function Footer() {
                 <div>
                   <p className="text-sm text-[#060404]/70">Phone</p>
                   <a
-                    href="tel:+1234567890"
+                    href="tel:+233257266272"
                     className="text-sm font-medium text-[#68ba4a] hover:underline"
                   >
-                    +1 (234) 567-890
+                    +233 (257) 266-272
                   </a>
+                  <span className="text-green-500">/</span>
+                  <a
+                    href="tel:+233501234567"
+                    className="text-sm font-medium text-[#68ba4a] hover:underline"
+                  >
+                     +233 (501) 234-567
+                  </a>
+
                 </div>
               </li>
             </ul>

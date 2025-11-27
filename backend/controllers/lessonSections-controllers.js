@@ -1,4 +1,4 @@
-import  db  from "../config/database.js";
+import db from "../config/database.js";
 import { v4 as uuidv4 } from "uuid";
 
 // controller to create section
@@ -20,7 +20,9 @@ export const createSection = async (req, res) => {
 
     const id = uuidv4();
 
-    await db.query(`INSERT INTO lesson_sections (id, lesson_id, title, content, order_index, is_active) VALUES (?, ?, ?, ?, ?, ?)`, [id, lessonId, title, content, orderIndex, isActive]
+    await db.query(
+      `INSERT INTO lesson_sections (id, lesson_id, title, content, order_index, is_active) VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, lessonId, title, content, orderIndex, isActive]
     );
 
     return res.status(201).json({
@@ -32,7 +34,7 @@ export const createSection = async (req, res) => {
         title,
         content,
         orderIndex,
-        isActive
+        isActive,
       },
     });
   } catch (err) {

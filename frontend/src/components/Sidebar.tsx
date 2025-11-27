@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -53,8 +54,8 @@ const Sidebar = ({ isOpen, onClose, activePage = "dashboard" }: SidebarProps) =>
               onClose();
             }}
             className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activePage === "dashboard"
-                ? "bg-white/90 shadow-sm font-semibold hover:shadow-md"
-                : "hover:bg-white/40"
+              ? "bg-white/90 shadow-sm font-semibold hover:shadow-md"
+              : "hover:bg-white/40"
               }`}
           >
             <i className={`fas fa-home w-5 ${activePage === "dashboard" ? "text-[#68ba4a]" : "text-[#060404]"
@@ -68,8 +69,8 @@ const Sidebar = ({ isOpen, onClose, activePage = "dashboard" }: SidebarProps) =>
               onClose();
             }}
             className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activePage === "lessons"
-                ? "bg-white/90 shadow-sm font-semibold hover:shadow-md"
-                : "hover:bg-white/40"
+              ? "bg-white/90 shadow-sm font-semibold hover:shadow-md"
+              : "hover:bg-white/40"
               }`}
           >
             <i className={`fas fa-book-open w-5 ${activePage === "lessons" ? "text-[#68ba4a]" : "text-[#060404]"
@@ -83,8 +84,8 @@ const Sidebar = ({ isOpen, onClose, activePage = "dashboard" }: SidebarProps) =>
               onClose();
             }}
             className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activePage === "quizzes"
-                ? "bg-white/90 shadow-sm font-semibold hover:shadow-md"
-                : "hover:bg-white/40"
+              ? "bg-white/90 shadow-sm font-semibold hover:shadow-md"
+              : "hover:bg-white/40"
               }`}
           >
             <i className={`fas fa-question-circle w-5 ${activePage === "quizzes" ? "text-[#68ba4a]" : "text-[#060404]"
@@ -98,14 +99,27 @@ const Sidebar = ({ isOpen, onClose, activePage = "dashboard" }: SidebarProps) =>
               onClose();
             }}
             className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activePage === "games"
-                ? "bg-white/90 shadow-sm font-semibold hover:shadow-md"
-                : "hover:bg-white/40"
+              ? "bg-white/90 shadow-sm font-semibold hover:shadow-md"
+              : "hover:bg-white/40"
               }`}
           >
             <i className={`fas fa-gamepad w-5 ${activePage === "games" ? "text-[#68ba4a]" : "text-[#060404]"
               }`}></i>
             <span className="text-[#060404]">Games</span>
           </button>
+
+          <Link
+            to="/settings"
+            onClick={() => onClose()}
+            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activePage === "settings"
+              ? "bg-white/90 shadow-sm font-semibold hover:shadow-md"
+              : "hover:bg-white/40"
+              }`}
+          >
+            <i className={`fas fa-cog w-5 ${activePage === "settings" ? "text-[#68ba4a]" : "text-[#060404]"
+              }`}></i>
+            <span className="font-medium">Settings</span>
+          </Link>
         </nav>
 
         <div className="p-4 mx-3 mb-3 bg-linear-to-br from-white/80 to-white/60 backdrop-blur rounded-xl border border-white/40 shadow-sm">
