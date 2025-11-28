@@ -81,6 +81,7 @@ const GameInterface = ({ studentName, userStats, onUpdateStats }: GameInterfaceP
     if (timeLeft === 0 && gameState === "playing") {
       handleEndGame();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, gameState]);
 
   // Initialize game based on type
@@ -171,6 +172,7 @@ const GameInterface = ({ studentName, userStats, onUpdateStats }: GameInterfaceP
     if (selectedLeft && selectedRight) {
       checkMatch();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeft, selectedRight]);
 
   const checkMatch = () => {
@@ -253,8 +255,13 @@ const GameInterface = ({ studentName, userStats, onUpdateStats }: GameInterfaceP
 
     localStorage.setItem("logic_game_scores", JSON.stringify(scores));
 
-    // Update XP
+    // Save XP to localStorage
     const xpEarned = Math.floor(gameScore / 2);
+    const currentXP = parseInt(localStorage.getItem("user_xp") || "0");
+    localStorage.setItem("user_xp", (currentXP + xpEarned).toString());
+    localStorage.setItem("user_level", Math.floor((currentXP + xpEarned) / 100).toString());
+
+    // Update XP in state
     if (onUpdateStats && userStats) {
       const updated: UserStats = {
         ...userStats,
@@ -396,8 +403,8 @@ const GameInterface = ({ studentName, userStats, onUpdateStats }: GameInterfaceP
                         initTruthTable();
                       }}
                       className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${currentOperator === op
-                          ? 'bg-[#68ba4a] text-white'
-                          : 'bg-[#f4f7f4] text-[#060404] hover:bg-[#e8f5e9]'
+                        ? 'bg-[#68ba4a] text-white'
+                        : 'bg-[#f4f7f4] text-[#060404] hover:bg-[#e8f5e9]'
                         }`}
                     >
                       {op === 'AND' && 'p ∧ q'}
@@ -431,8 +438,8 @@ const GameInterface = ({ studentName, userStats, onUpdateStats }: GameInterfaceP
                             <button
                               onClick={() => handleTruthTableAnswer(index, true)}
                               className={`px-6 py-2 rounded-lg font-bold transition-all ${row.userAnswer === true
-                                  ? 'bg-[#68ba4a] text-white shadow-md'
-                                  : 'bg-[#f4f7f4] text-[#060404] hover:bg-[#e8f5e9]'
+                                ? 'bg-[#68ba4a] text-white shadow-md'
+                                : 'bg-[#f4f7f4] text-[#060404] hover:bg-[#e8f5e9]'
                                 }`}
                             >
                               T
@@ -440,8 +447,8 @@ const GameInterface = ({ studentName, userStats, onUpdateStats }: GameInterfaceP
                             <button
                               onClick={() => handleTruthTableAnswer(index, false)}
                               className={`px-6 py-2 rounded-lg font-bold transition-all ${row.userAnswer === false
-                                  ? 'bg-[#68ba4a] text-white shadow-md'
-                                  : 'bg-[#f4f7f4] text-[#060404] hover:bg-[#e8f5e9]'
+                                ? 'bg-[#68ba4a] text-white shadow-md'
+                                : 'bg-[#f4f7f4] text-[#060404] hover:bg-[#e8f5e9]'
                                 }`}
                             >
                               F
@@ -472,10 +479,10 @@ const GameInterface = ({ studentName, userStats, onUpdateStats }: GameInterfaceP
                     onClick={() => !pair.matched && handleMatchSelect('left', pair.id)}
                     disabled={pair.matched}
                     className={`w-full p-4 rounded-xl text-left font-mono transition-all ${pair.matched
-                        ? 'bg-green-100 border-2 border-green-500 text-green-700 cursor-default'
-                        : selectedLeft === pair.id
-                          ? 'bg-[#68ba4a] border-2 border-[#68ba4a] text-white shadow-lg'
-                          : 'bg-[#f4f7f4] border-2 border-[#b3ccb8] hover:border-[#68ba4a] hover:bg-[#e8f5e9]'
+                      ? 'bg-green-100 border-2 border-green-500 text-green-700 cursor-default'
+                      : selectedLeft === pair.id
+                        ? 'bg-[#68ba4a] border-2 border-[#68ba4a] text-white shadow-lg'
+                        : 'bg-[#f4f7f4] border-2 border-[#b3ccb8] hover:border-[#68ba4a] hover:bg-[#e8f5e9]'
                       }`}
                   >
                     {pair.statement}
@@ -492,10 +499,10 @@ const GameInterface = ({ studentName, userStats, onUpdateStats }: GameInterfaceP
                     onClick={() => !pair.matched && handleMatchSelect('right', pair.id)}
                     disabled={pair.matched}
                     className={`w-full p-4 rounded-xl text-left font-mono transition-all ${pair.matched
-                        ? 'bg-green-100 border-2 border-green-500 text-green-700 cursor-default'
-                        : selectedRight === pair.id
-                          ? 'bg-[#68ba4a] border-2 border-[#68ba4a] text-white shadow-lg'
-                          : 'bg-[#f4f7f4] border-2 border-[#b3ccb8] hover:border-[#68ba4a] hover:bg-[#e8f5e9]'
+                      ? 'bg-green-100 border-2 border-green-500 text-green-700 cursor-default'
+                      : selectedRight === pair.id
+                        ? 'bg-[#68ba4a] border-2 border-[#68ba4a] text-white shadow-lg'
+                        : 'bg-[#f4f7f4] border-2 border-[#b3ccb8] hover:border-[#68ba4a] hover:bg-[#e8f5e9]'
                       }`}
                   >
                     {pair.equivalent}

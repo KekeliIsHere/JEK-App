@@ -51,12 +51,13 @@ const games = [
   },
 ];
 
-export default function GamesPage({ studentName, userStats }: GamesPageProps) {
+export default function GamesPage({ userStats }: GamesPageProps) {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [gameScores, setGameScores] = useState<GameScore[]>([]);
 
   useEffect(() => {
+    document.title = "JEK Logic Tutor | Games";
     // Load game scores from localStorage
     const stored = localStorage.getItem("logic_game_scores");
     if (stored) {

@@ -1,4 +1,5 @@
 import express from "express";
+import db from "../config/database.js";
 import {
   createSection,
   getSectionsByLesson,
@@ -24,10 +25,12 @@ router.patch("/section/update/:id", updateSection);
 // DELETE SECTION
 router.delete("/section/delete/:id", deleteSection);
 
+// GET ALL SECTIONS (for mapping)
 router.get("/all", async (req, res) => {
-
   try {
-    const [sections] = await db.query("SELECT id, lesson_id, title FROM lesson_sections");
+    const [sections] = await db.query(
+      "SELECT id, lesson_id, title FROM lesson_sections"
+    );
     return res.status(200).json({
       success: true,
       sections,

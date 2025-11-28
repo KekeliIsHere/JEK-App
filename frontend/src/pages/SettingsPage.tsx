@@ -5,6 +5,9 @@ import Sidebar from "../components/Sidebar";
 import Swal from "sweetalert2";
 import api from "../services/api";
 
+
+const API_URL: string = import.meta.env.VITE_API_URL;
+
 interface SettingsPageProps {
   studentName: string;
 }
@@ -80,7 +83,7 @@ export default function SettingsPage({ studentName }: SettingsPageProps) {
   };
 
   useEffect(() => {
-    document.title = "JEK Logic Tutor | Lesson  ";
+    document.title = "JEK Logic Tutor | Settings";
   }, []);
 
   const handleSaveProfile = async () => {
@@ -102,7 +105,7 @@ export default function SettingsPage({ studentName }: SettingsPageProps) {
 
         if (uploadResponse.data.success) {
           // Update user avatar in context
-          const fullAvatarUrl = `http://localhost:3000${uploadResponse.data.avatarUrl}`;
+          const fullAvatarUrl = `${API_URL}${uploadResponse.data.avatarUrl}`;
 
           setUser((prev) => {
             if (!prev) return null;

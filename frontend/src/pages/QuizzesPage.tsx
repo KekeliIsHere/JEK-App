@@ -39,6 +39,7 @@ export default function QuizzesPage({ userStats }: QuizzesPageProps) {
   const [completedQuizzes, setCompletedQuizzes] = useState<QuizCompletion[]>([]);
 
   useEffect(() => {
+    document.title = "JEK Logic Tutor | Quizzes";
     async function loadLessonsAndProgress() {
       try {
         const fetchedLessons = await fetchLessons();
@@ -57,7 +58,8 @@ export default function QuizzesPage({ userStats }: QuizzesPageProps) {
     }
 
     loadLessonsAndProgress();
-  }, [fetchLessons]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const isQuizCompleted = (lessonId: string): QuizCompletion | undefined => {
     return completedQuizzes.find((q) => q.lessonId === lessonId);
@@ -88,10 +90,6 @@ export default function QuizzesPage({ userStats }: QuizzesPageProps) {
     if (orderIndex <= 5) return { label: "Core", color: "bg-[#8baab1] text-white" };
     return { label: "Challenge", color: "bg-[#68ba4a] text-white" };
   };
-
-    useEffect(() => {
-    document.title = "JEK Logic Tutor | Quizzes";
-  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8faf9] to-[#e8f5e9] flex">
@@ -172,8 +170,8 @@ export default function QuizzesPage({ userStats }: QuizzesPageProps) {
                     data-aos="flip-left"
                     data-aos-delay={index * 50}
                     className={`bg-white rounded-2xl shadow-md border-2 transition-all duration-300 ${unlocked
-                        ? "border-[#b3ccb8]/40 hover:border-[#68ba4a]/50 hover:shadow-xl"
-                        : "border-gray-200 opacity-75"
+                      ? "border-[#b3ccb8]/40 hover:border-[#68ba4a]/50 hover:shadow-xl"
+                      : "border-gray-200 opacity-75"
                       } p-5 flex flex-col space-y-3`}
                   >
                     {/* Header */}
