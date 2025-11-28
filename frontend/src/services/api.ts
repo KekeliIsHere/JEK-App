@@ -1,6 +1,13 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+let API_URL;
+const NODE_ENV = import.meta.env.VITE_NODE_ENV || "development";
+
+if (NODE_ENV === "production") {
+  API_URL = "https://jek-app.onrender.com";
+} else {
+  API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+}
 
 // An axios instance
 const api = axios.create({
