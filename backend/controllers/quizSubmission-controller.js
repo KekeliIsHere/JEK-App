@@ -9,7 +9,7 @@ export const createQuizSubmission = async (req, res) => {
   try {
     // validate section exists
     const [sectionRows] = await db.query(
-      "SELECT id FROM lesson_sections WHERE id = ?",
+      "SELECT id, lesson_id FROM lesson_sections WHERE id = ?",
       [sectionId]
     );
 
@@ -19,6 +19,8 @@ export const createQuizSubmission = async (req, res) => {
         error: "Section not found!",
       });
     }
+
+    const lessonId = sectionRows[0].lesson_id;
 
     // fetch all quizzes for this section
     const [quizzes] = await db.query(
@@ -105,6 +107,60 @@ export const createQuizSubmission = async (req, res) => {
         ]
       );
     }
+
+    // ===== AUTOMATIC LESSON SCORE COMPUTATION =====
+    // Get all sections for this lesson
+    const [allSections] = await db.query(
+      "SELECT id FROM lesson_sections WHERE lesson_id = ?",
+      [lessonId]
+    );
+
+    const sectionIds = allSections.map((s) => s.id);
+
+    // Get best score per section for this user
+    const [bestScores] = await db.query(
+      `SELECT section_id, MAX(score) AS bestScore
+       FROM quiz_submissions
+       WHERE user_id = ? AND section_id IN (?)
+       GROUP BY section_id`,
+      [userId, sectionIds]
+    );
+
+    // Check if user has attempted all sections
+    if (bestScores.length === sectionIds.length) {
+      // Calculate lesson score (average of best scores)
+      const totalBestScore = bestScores.reduce(
+        (sum, s) => sum + s.bestScore,
+        0
+      );
+      const lessonScore = Math.round(totalBestScore / bestScores.length);
+      const lessonStatus = lessonScore >= 50 ? "passed" : "failed";
+
+      // Check if a score record already exists
+      const [existingScore] = await db.query(
+        "SELECT id FROM scores WHERE user_id = ? AND lesson_id = ?",
+        [userId, lessonId]
+      );
+
+      if (existingScore.length > 0) {
+        // Update existing
+        await db.query(
+          "UPDATE scores SET score = ?, status = ?, updated_at = NOW() WHERE id = ?",
+          [lessonScore, lessonStatus, existingScore[0].id]
+        );
+      } else {
+        // Insert new
+        await db.query(
+          "INSERT INTO scores (id, user_id, lesson_id, score, status) VALUES (?, ?, ?, ?, ?)",
+          [uuid(), userId, lessonId, lessonScore, lessonStatus]
+        );
+      }
+
+      console.log(
+        `✅ Lesson score computed: ${lessonScore}% for lesson ${lessonId}`
+      );
+    }
+    // ===== END AUTOMATIC LESSON SCORE COMPUTATION =====
 
     // response
     return res.status(201).json({

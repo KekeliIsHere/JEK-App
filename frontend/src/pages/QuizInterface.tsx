@@ -191,6 +191,11 @@ const QuizInterface = ({ studentName, userStats, onUpdateStats }: QuizInterfaceP
           onUpdateStats(updated);
         }
 
+        // Save XP to localStorage
+        const currentXP = parseInt(localStorage.getItem("user_xp") || "0");
+        localStorage.setItem("user_xp", (currentXP + xpEarned).toString());
+        localStorage.setItem("user_level", Math.floor((currentXP + xpEarned) / 100).toString());
+
         // Store completion in localStorage for quizzes page
         if (!sectionId) {
           const storedCompletions = localStorage.getItem("quiz_completions");
@@ -214,7 +219,12 @@ const QuizInterface = ({ studentName, userStats, onUpdateStats }: QuizInterfaceP
               <p class="text-2xl font-bold mb-2">${correctCount}/${totalQuestions}</p>
               <p class="text-xl mb-2">${score}%</p>
               <p class="text-sm text-gray-600 mb-1">Time: ${formatTime(durationSeconds)}</p>
-              <p class="text-sm text-gray-600">${status === "passed" ? "Great job! +75 XP" : "Keep practicing! +25 XP"}</p>
+              <p class="text-lg font-bold ${status === "passed" ? "text-green-600" : "text-orange-600"} mt-2">
+                ${status === "passed" ? "+75 XP 🎉" : "+25 XP 📚"}
+              </p>
+              <p class="text-xs text-gray-500 mt-1">
+                ${status === "passed" ? "Great job!" : "Keep practicing!"}
+              </p>
             </div>
           `,
           confirmButtonColor: "#68ba4a",
@@ -247,7 +257,7 @@ const QuizInterface = ({ studentName, userStats, onUpdateStats }: QuizInterfaceP
     }
   };
 
-    useEffect(() => {
+  useEffect(() => {
     document.title = "JEK Logic Tutor | Take Quiz";
   }, []);
 
@@ -351,12 +361,12 @@ const QuizInterface = ({ studentName, userStats, onUpdateStats }: QuizInterfaceP
                 onClick={() => !showResult && handleAnswer(key)}
                 disabled={showResult}
                 className={`w-full text-left px-6 py-4 rounded-xl border-2 transition font-semibold ${selectedOption === key
-                    ? key === currentQuiz.correct_answer
-                      ? "bg-green-100 border-green-500 text-[#060404]"
-                      : "bg-red-100 border-red-500 text-[#060404]"
-                    : key === currentQuiz.correct_answer && showResult
-                      ? "bg-green-100 border-green-500 text-[#060404]"
-                      : "bg-white border-[#b3ccb8] hover:border-[#8baab1]"
+                  ? key === currentQuiz.correct_answer
+                    ? "bg-green-100 border-green-500 text-[#060404]"
+                    : "bg-red-100 border-red-500 text-[#060404]"
+                  : key === currentQuiz.correct_answer && showResult
+                    ? "bg-green-100 border-green-500 text-[#060404]"
+                    : "bg-white border-[#b3ccb8] hover:border-[#8baab1]"
                   } ${showResult ? "cursor-default" : "cursor-pointer hover:bg-[#f4f7f4]"}`}
               >
                 <span className="flex items-center gap-3">

@@ -72,34 +72,25 @@ const LessonDetailPage = ({ studentName, userStats: propsUserStats, onUpdateStat
       }
 
       try {
-        // Fetch lesson details using the correct endpoint
         const response = await api.get(`/lessons/lesson/${id}`);
-
         if (!response.data.success) {
           throw new Error("Lesson not found");
         }
 
         setLesson(response.data.lesson);
 
-        // Fetch lesson sections using the correct endpoint
         const sectionsResponse = await api.get(`/sections/${id}`);
         if (sectionsResponse.data.success) {
           setSections(sectionsResponse.data.sections);
         }
 
-        // Fetch lesson progress - This will now properly load user's progress
         try {
           const progressResponse = await api.get(`/lesson_progress/${id}`);
           if (progressResponse.data.success) {
             setProgress(progressResponse.data.sections);
-
-            // Find the first incomplete section to resume from
             const firstIncompleteIndex = progressResponse.data.sections.findIndex(
               (section: LessonProgress) => !section.isCompleted
             );
-
-            // If all sections are completed or none started, start from beginning
-            // Otherwise, resume from first incomplete section
             if (firstIncompleteIndex !== -1) {
               setCurrentSectionIndex(firstIncompleteIndex);
             }
@@ -110,7 +101,12 @@ const LessonDetailPage = ({ studentName, userStats: propsUserStats, onUpdateStat
         }
       } catch (error) {
         console.error("Failed to load lesson:", error);
-        alert("Failed to load lesson. Redirecting to lessons page...");
+        await Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Failed to load lesson. Redirecting...",
+          confirmButtonColor: "#68ba4a",
+        });
         navigate("/lessons");
       } finally {
         setLoading(false);
@@ -124,20 +120,33 @@ const LessonDetailPage = ({ studentName, userStats: propsUserStats, onUpdateStat
     document.title = "JEK Logic Tutor | Lesson Sections";
   }, []);
 
+  // NEW: Handle direct section access from overview
+  const handleSectionClick = (index: number) => {
+    if (!isStarted) {
+      setIsStarted(true);
+    }
+    setCurrentSectionIndex(index);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleStartLesson = () => {
     if (sections.length === 0) {
-      alert("⚠️ No sections available for this lesson yet.");
+      Swal.fire({
+        icon: "warning",
+        title: "No Sections Available",
+        text: "No sections available for this lesson yet.",
+        confirmButtonColor: "#68ba4a",
+      });
       return;
     }
     setIsStarted(true);
-
-    // Resume from first incomplete section
     const firstIncompleteIndex = progress.findIndex(p => !p.isCompleted);
     if (firstIncompleteIndex !== -1) {
       setCurrentSectionIndex(firstIncompleteIndex);
     } else {
       setCurrentSectionIndex(0);
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleTakeQuiz = (sectionId: string) => {
@@ -156,7 +165,6 @@ const LessonDetailPage = ({ studentName, userStats: propsUserStats, onUpdateStat
   const handleNextSection = async () => {
     const currentSection = sections[currentSectionIndex];
 
-    // Check if quiz has been taken for this section
     if (!quizTaken[currentSection.id]) {
       await Swal.fire({
         icon: "warning",
@@ -172,29 +180,32 @@ const LessonDetailPage = ({ studentName, userStats: propsUserStats, onUpdateStat
       return;
     }
 
-    // Mark current section as completed and update in database
     try {
       await api.post("/lesson_progress/update", {
         sectionId: currentSection.id,
         isCompleted: true,
-        lastScore: 100, // Default completion score
+        lastScore: 100,
       });
 
-      // Refresh progress from database to ensure sync
       const progressResponse = await api.get(`/lesson_progress/${id}`);
       if (progressResponse.data.success) {
         setProgress(progressResponse.data.sections);
       }
     } catch (err) {
       console.error("Failed to update progress:", err);
-      alert("Failed to save progress. Please try again.");
+      await Swal.fire({
+        icon: "error",
+        title: "Save Failed",
+        text: "Failed to save progress. Please try again.",
+        confirmButtonColor: "#68ba4a",
+      });
       return;
     }
 
     if (currentSectionIndex < sections.length - 1) {
       setCurrentSectionIndex(currentSectionIndex + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      // All sections completed
       handleCompleteLesson();
     }
   };
@@ -205,17 +216,10 @@ const LessonDetailPage = ({ studentName, userStats: propsUserStats, onUpdateStat
     }
   };
 
-  const handleSectionClick = (index: number) => {
-    setCurrentSectionIndex(index);
-  };
-
   const handleCompleteLesson = async () => {
     const xpReward = 50;
 
     try {
-      // Optionally: Call backend to mark entire lesson as complete
-      // This could update a separate lessons_completed table or user progress
-
       if (userStats && onUpdateStats && lesson) {
         const updated = {
           ...userStats,
@@ -227,22 +231,21 @@ const LessonDetailPage = ({ studentName, userStats: propsUserStats, onUpdateStat
         };
         onUpdateStats(updated);
 
+        // Save XP to localStorage
+        const currentXP = parseInt(localStorage.getItem("user_xp") || "0");
+        localStorage.setItem("user_xp", (currentXP + xpReward).toString());
+
         await Swal.fire({
           icon: "success",
           title: "Lesson Completed!",
-          text: `Congratulations! You earned +${xpReward} XP`,
+          html: `
+            <div class="text-center">
+              <p class="text-lg mb-2">Congratulations! 🎉</p>
+              <p class="text-2xl font-bold text-green-600">+${xpReward} XP</p>
+            </div>
+          `,
           confirmButtonColor: "#68ba4a",
-          showConfirmButton: true,
-          timer: 3000,
-        });
-      } else if (lesson) {
-        await Swal.fire({
-          icon: "success",
-          title: "Lesson Completed!",
-          text: `You have completed "${lesson.title}"`,
-          confirmButtonColor: "#68ba4a",
-          showConfirmButton: true,
-          timer: 3000,
+          confirmButtonText: "Continue",
         });
       }
     } catch (error) {
@@ -493,60 +496,69 @@ const LessonDetailPage = ({ studentName, userStats: propsUserStats, onUpdateStat
         {!isStarted ? (
           <>
             {/* Lesson Overview */}
-            <section
-              className="bg-white rounded-2xl shadow-md border border-[#b3ccb8]/40 p-6 mb-6"
-              data-aos="fade-up"
-            >
+            <section className="bg-white rounded-2xl shadow-md border border-[#b3ccb8]/40 p-6 mb-6" data-aos="fade-up">
               <h2 className="text-xl font-bold mb-4">📖 Lesson Overview</h2>
               <p className="text-[#060404]/80 leading-relaxed mb-6">{lesson.content}</p>
 
-              {/* Sections List */}
+              {/* Clickable Sections List */}
               {sections.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="font-bold text-lg mb-3">What you'll learn:</h3>
-                  {sections.map((section, i) => (
-                    <div
-                      key={section.id}
-                      data-aos="fade-right"
-                      data-aos-delay={i * 50}
-                      className="bg-[#f4f7f4] rounded-xl p-4 border-l-4 border-[#68ba4a] flex items-start gap-3"
-                    >
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#68ba4a]/20 text-[#68ba4a] font-bold shrink-0">
-                        {getSectionProgress(section.id)?.isCompleted ? (
-                          <i className="fas fa-check text-sm"></i>
-                        ) : (
-                          <span className="text-sm">{i + 1}</span>
-                        )}
-                      </div>
-
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="font-semibold text-[#060404]">{section.title}</p>
-                          {section.is_active && (
-                            <span className="text-[10px] px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-300 font-semibold">
-                              Active
-                            </span>
+                  {sections.map((section, i) => {
+                    const sectionProgress = getSectionProgress(section.id);
+                    return (
+                      <button
+                        key={section.id}
+                        onClick={() => handleSectionClick(i)}
+                        data-aos="fade-right"
+                        data-aos-delay={i * 50}
+                        className="w-full bg-[#f4f7f4] hover:bg-[#e8f5e9] rounded-xl p-4 border-l-4 border-[#68ba4a] flex items-start gap-3 transition-all hover:shadow-md group"
+                      >
+                        <div className={`flex items-center justify-center w-8 h-8 rounded-full shrink-0 font-bold transition-transform group-hover:scale-110 ${sectionProgress?.isCompleted
+                            ? 'bg-green-500 text-white'
+                            : 'bg-[#68ba4a]/20 text-[#68ba4a]'
+                          }`}>
+                          {sectionProgress?.isCompleted ? (
+                            <i className="fas fa-check text-sm"></i>
+                          ) : (
+                            <span className="text-sm">{i + 1}</span>
                           )}
                         </div>
-                        <div
-                          className="text-sm text-[#060404]/70 line-clamp-2 lesson-content"
-                          dangerouslySetInnerHTML={{ __html: section.content.substring(0, 100) + "..." }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+
+                        <div className="flex-1 text-left">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="font-semibold text-[#060404] group-hover:text-[#68ba4a] transition-colors">
+                              {section.title}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              {section.is_active && (
+                                <span className="text-[10px] px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-300 font-semibold">
+                                  Active
+                                </span>
+                              )}
+                              <i className="fas fa-arrow-right text-[#8baab1] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </div>
+                          </div>
+                          <div
+                            className="text-sm text-[#060404]/70 line-clamp-2 lesson-content"
+                            dangerouslySetInnerHTML={{ __html: section.content.substring(0, 100) + "..." }}
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </section>
 
             {/* Start Button */}
-            <div className="flex justify-center">
+            <div className="flex justify-center" data-aos="zoom-in" data-aos-delay="200">
               <button
                 onClick={handleStartLesson}
                 className="px-8 py-4 rounded-xl bg-gradient-to-r from-[#68ba4a] to-[#7cc55f] text-white font-bold text-lg hover:from-[#5a9a3d] hover:to-[#68ba4a] transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-3"
               >
                 <i className="fas fa-play-circle text-2xl"></i>
-                <span>Start Learning</span>
+                <span>Start From Beginning</span>
               </button>
             </div>
           </>

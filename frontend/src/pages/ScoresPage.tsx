@@ -35,7 +35,7 @@ interface QuizSubmission {
   created_at: string;
 }
 
-export default function ScoresPage({ studentName, userStats }: ScoresPageProps) {
+export default function ScoresPage({ studentName }: ScoresPageProps) {
   const navigate = useNavigate();
   const { fetchLessons } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -83,38 +83,52 @@ export default function ScoresPage({ studentName, userStats }: ScoresPageProps) 
 
         setRecentSubmissions(processedSubmissions);
 
-        // Group submissions by lesson and calculate lesson scores
-        const lessonScoresMap: Record<string, { scores: number[], updated: string }> = {};
+        // Fetch computed lesson scores from backend
+        const scoresResponse = await api.get("/scores/user_scores");
 
-        submissions.forEach((sub: any) => {
-          // Get lesson_id from section
-          const section = sectionsResponse.data?.sections?.find((s: any) => s.id === sub.section_id);
-          if (section) {
-            const lessonId = section.lesson_id;
-            if (!lessonScoresMap[lessonId]) {
-              lessonScoresMap[lessonId] = { scores: [], updated: sub.created_at };
+        if (scoresResponse.data.success && scoresResponse.data.scores.length > 0) {
+          const scores: LessonScore[] = scoresResponse.data.scores.map((scoreData: any) => ({
+            id: scoreData.id,
+            lesson_id: scoreData.lesson_id,
+            lessonTitle: scoreData.lesson_title,
+            score: scoreData.score,
+            status: scoreData.status,
+            updated_at: scoreData.updated_at,
+          }));
+
+          setLessonScores(scores.sort((a, b) => b.score - a.score));
+        } else {
+          // Fallback: Calculate from submissions (for lessons not yet completed)
+          const lessonScoresMap: Record<string, { scores: number[], updated: string }> = {};
+
+          submissions.forEach((sub: any) => {
+            const section = sectionsResponse.data?.sections?.find((s: any) => s.id === sub.section_id);
+            if (section) {
+              const lessonId = section.lesson_id;
+              if (!lessonScoresMap[lessonId]) {
+                lessonScoresMap[lessonId] = { scores: [], updated: sub.created_at };
+              }
+              lessonScoresMap[lessonId].scores.push(sub.score);
+              if (new Date(sub.created_at) > new Date(lessonScoresMap[lessonId].updated)) {
+                lessonScoresMap[lessonId].updated = sub.created_at;
+              }
             }
-            lessonScoresMap[lessonId].scores.push(sub.score);
-            if (new Date(sub.created_at) > new Date(lessonScoresMap[lessonId].updated)) {
-              lessonScoresMap[lessonId].updated = sub.created_at;
-            }
-          }
-        });
+          });
 
-        // Calculate average scores for each lesson
-        const scores: LessonScore[] = Object.entries(lessonScoresMap).map(([lessonId, data]) => {
-          const avgScore = Math.round(data.scores.reduce((a, b) => a + b, 0) / data.scores.length);
-          return {
-            id: `score-${lessonId}`,
-            lesson_id: lessonId,
-            lessonTitle: lessonsMap[lessonId] || "Unknown Lesson",
-            score: avgScore,
-            status: avgScore >= 50 ? "passed" : "failed",
-            updated_at: data.updated,
-          };
-        });
+          const scores: LessonScore[] = Object.entries(lessonScoresMap).map(([lessonId, data]) => {
+            const avgScore = Math.round(data.scores.reduce((a, b) => a + b, 0) / data.scores.length);
+            return {
+              id: `score-${lessonId}`,
+              lesson_id: lessonId,
+              lessonTitle: lessonsMap[lessonId] || "Unknown Lesson",
+              score: avgScore,
+              status: avgScore >= 50 ? "passed" : "failed",
+              updated_at: data.updated,
+            };
+          });
 
-        setLessonScores(scores.sort((a, b) => b.score - a.score));
+          setLessonScores(scores.sort((a, b) => b.score - a.score));
+        }
       }
     } catch (error) {
       console.error("Failed to load scores:", error);
@@ -214,8 +228,8 @@ export default function ScoresPage({ studentName, userStats }: ScoresPageProps) 
                 <button
                   onClick={() => setSelectedTab("overview")}
                   className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold text-sm sm:text-base transition-all ${selectedTab === "overview"
-                      ? "bg-gradient-to-r from-[#68ba4a] to-[#7cc55f] text-white"
-                      : "text-[#060404]/70 hover:bg-[#f8faf9]"
+                    ? "bg-gradient-to-r from-[#68ba4a] to-[#7cc55f] text-white"
+                    : "text-[#060404]/70 hover:bg-[#f8faf9]"
                     }`}
                 >
                   <i className="fas fa-chart-pie mr-2"></i>
@@ -224,8 +238,8 @@ export default function ScoresPage({ studentName, userStats }: ScoresPageProps) 
                 <button
                   onClick={() => setSelectedTab("lessons")}
                   className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold text-sm sm:text-base transition-all ${selectedTab === "lessons"
-                      ? "bg-gradient-to-r from-[#68ba4a] to-[#7cc55f] text-white"
-                      : "text-[#060404]/70 hover:bg-[#f8faf9]"
+                    ? "bg-gradient-to-r from-[#68ba4a] to-[#7cc55f] text-white"
+                    : "text-[#060404]/70 hover:bg-[#f8faf9]"
                     }`}
                 >
                   <i className="fas fa-book mr-2"></i>
@@ -234,8 +248,8 @@ export default function ScoresPage({ studentName, userStats }: ScoresPageProps) 
                 <button
                   onClick={() => setSelectedTab("quizzes")}
                   className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-semibold text-sm sm:text-base transition-all ${selectedTab === "quizzes"
-                      ? "bg-gradient-to-r from-[#68ba4a] to-[#7cc55f] text-white"
-                      : "text-[#060404]/70 hover:bg-[#f8faf9]"
+                    ? "bg-gradient-to-r from-[#68ba4a] to-[#7cc55f] text-white"
+                    : "text-[#060404]/70 hover:bg-[#f8faf9]"
                     }`}
                 >
                   <i className="fas fa-clipboard-check mr-2"></i>
@@ -366,8 +380,8 @@ export default function ScoresPage({ studentName, userStats }: ScoresPageProps) 
                           <div className="text-right">
                             <div className="text-4xl font-bold text-[#68ba4a] mb-1">{score.score}%</div>
                             <span className={`text-xs px-3 py-1 rounded-full font-semibold ${score.status === "passed"
-                                ? "bg-green-100 text-green-700 border border-green-300"
-                                : "bg-red-100 text-red-700 border border-red-300"
+                              ? "bg-green-100 text-green-700 border border-green-300"
+                              : "bg-red-100 text-red-700 border border-red-300"
                               }`}>
                               {score.status === "passed" ? "✓ Passed" : "✗ Needs Review"}
                             </span>
@@ -425,8 +439,8 @@ export default function ScoresPage({ studentName, userStats }: ScoresPageProps) 
                               </td>
                               <td className="px-4 py-4 text-center">
                                 <span className={`text-xs px-3 py-1 rounded-full font-semibold ${submission.status === "passed"
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-red-100 text-red-700"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
                                   }`}>
                                   {submission.status === "passed" ? "Passed" : "Failed"}
                                 </span>

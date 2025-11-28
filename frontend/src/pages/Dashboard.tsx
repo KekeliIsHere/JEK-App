@@ -32,6 +32,47 @@ const Dashboard = ({ studentName, userStats, studentAvatar }: DashboardProps) =>
   const [loadingLessons, setLoadingLessons] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Load XP and Level from localStorage
+  const [displayXP, setDisplayXP] = useState(userStats.xp);
+  const [displayLevel, setDisplayLevel] = useState(userStats.level);
+
+  useEffect(() => {
+    // Load XP from localStorage on mount
+    const storedXP = parseInt(localStorage.getItem("user_xp") || "0");
+    const storedLevel = parseInt(localStorage.getItem("user_level") || "0");
+
+    if (storedXP > 0) {
+      setDisplayXP(storedXP);
+      setDisplayLevel(storedLevel);
+    } else {
+      // Initialize localStorage with current userStats
+      localStorage.setItem("user_xp", userStats.xp.toString());
+      localStorage.setItem("user_level", userStats.level.toString());
+      setDisplayXP(userStats.xp);
+      setDisplayLevel(userStats.level);
+    }
+  }, [userStats]);
+
+  // Listen for XP updates from other pages
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const storedXP = parseInt(localStorage.getItem("user_xp") || "0");
+      const storedLevel = parseInt(localStorage.getItem("user_level") || "0");
+      setDisplayXP(storedXP);
+      setDisplayLevel(storedLevel);
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    // Also check for updates when window regains focus
+    window.addEventListener("focus", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("focus", handleStorageChange);
+    };
+  }, []);
+
   useEffect(() => {
     async function loadLessons() {
       try {
@@ -47,8 +88,15 @@ const Dashboard = ({ studentName, userStats, studentAvatar }: DashboardProps) =>
   }, [fetchLessons]);
 
   const handleLogout = async () => {
+    // Clear XP from localStorage on logout
+    localStorage.removeItem("user_xp");
+    localStorage.removeItem("user_level");
     await logout();
   };
+
+  // Calculate progress percentage
+  const currentLevelXP = displayXP % 100;
+  const progressPercentage = Math.min(currentLevelXP, 100);
 
   useEffect(() => {
     document.title = "JEK Logic Tutor | Dashboard";
@@ -60,7 +108,7 @@ const Dashboard = ({ studentName, userStats, studentAvatar }: DashboardProps) =>
 
       <main className="flex-1 flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 md:ml-64 bg-transparent">
         {/* Top bar */}
-        <header className="mb-6" data-aos="fade-down">
+        <header className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               {/* Hamburger Menu Button - Mobile Only */}
@@ -92,7 +140,7 @@ const Dashboard = ({ studentName, userStats, studentAvatar }: DashboardProps) =>
               <i className="fas fa-layer-group text-[#8baab1]"></i>
               <div className="text-xs">
                 <span className="text-[#060404]/60">Level</span>
-                <span className="font-bold text-[#68ba4a] ml-1">{userStats.level}</span>
+                <span className="font-bold text-[#68ba4a] ml-1">{displayLevel}</span>
               </div>
             </div>
             <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-[#68ba4a] to-[#8baab1] text-white flex items-center justify-center font-bold shadow-md">
@@ -117,11 +165,7 @@ const Dashboard = ({ studentName, userStats, studentAvatar }: DashboardProps) =>
         </header>
 
         {/* XP Progress Card */}
-        <section
-          className="bg-white rounded-2xl shadow-lg border border-[#e8f5e9] p-4 sm:p-6 mb-6 hover:shadow-xl transition-shadow"
-          data-aos="fade-up"
-          data-aos-delay="100"
-        >
+        <section className="bg-white rounded-2xl shadow-lg border border-[#e8f5e9] p-4 sm:p-6 mb-6 hover:shadow-xl transition-shadow">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#68ba4a] to-[#8baab1] flex items-center justify-center shadow-md">
@@ -130,24 +174,24 @@ const Dashboard = ({ studentName, userStats, studentAvatar }: DashboardProps) =>
               <div>
                 <h2 className="font-bold text-lg text-[#060404]">XP Progress</h2>
                 <p className="text-xs sm:text-sm text-[#060404]/60">
-                  {userStats.xp} / {(userStats.level + 1) * 100} XP
+                  {currentLevelXP} / 100 XP
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs sm:text-sm bg-gradient-to-r from-[#68ba4a]/20 to-[#8baab1]/20 text-[#68ba4a] font-semibold px-4 py-2 rounded-full border border-[#68ba4a]/30">
-                {userStats.xp > 0 ? `+${userStats.xp} XP` : "Start learning!"}
+                {displayXP > 0 ? `Total: ${displayXP} XP` : "Start learning!"}
               </span>
             </div>
           </div>
           <div className="w-full h-4 bg-[#e8f5e9] rounded-full overflow-hidden shadow-inner">
             <div
               className="h-full bg-gradient-to-r from-[#68ba4a] via-[#7cc55f] to-[#68ba4a] rounded-full transition-all duration-500 ease-out shadow-sm"
-              style={{ width: `${Math.min((userStats.xp % 100), 100)}%` }}
+              style={{ width: `${progressPercentage}%` }}
             />
           </div>
           <p className="text-xs text-[#060404]/50 mt-2 text-right">
-            {Math.min((userStats.xp % 100), 100)}% to Level {userStats.level + 1}
+            {progressPercentage}% to Level {displayLevel + 1}
           </p>
         </section>
 
@@ -278,11 +322,7 @@ const Dashboard = ({ studentName, userStats, studentAvatar }: DashboardProps) =>
         </section>
 
         {/* Stats Grid */}
-        <section
-          className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6"
-          data-aos="fade-up"
-          data-aos-delay="300"
-        >
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {/* Progress Stats */}
           <div className="bg-white rounded-2xl shadow-lg border border-[#e8f5e9] p-4 sm:p-6 hover:shadow-xl transition-shadow">
             <div className="flex items-center gap-3 mb-5">
@@ -305,7 +345,7 @@ const Dashboard = ({ studentName, userStats, studentAvatar }: DashboardProps) =>
                   </div>
                 </div>
                 <div className="text-3xl font-bold text-[#68ba4a]">
-                  {userStats.level}
+                  {displayLevel}
                 </div>
               </div>
               <div className="flex items-center justify-between bg-gradient-to-r from-[#f8faf9] to-[#f0f7f1] rounded-xl p-4 border border-[#e8f5e9] hover:border-[#68ba4a]/30 transition-all">
@@ -321,7 +361,7 @@ const Dashboard = ({ studentName, userStats, studentAvatar }: DashboardProps) =>
                   </div>
                 </div>
                 <div className="text-3xl font-bold text-[#8baab1]">
-                  {userStats.xp}
+                  {displayXP}
                 </div>
               </div>
               <div className="flex items-center justify-between bg-gradient-to-r from-[#f8faf9] to-[#f0f7f1] rounded-xl p-4 border border-[#e8f5e9] hover:border-[#68ba4a]/30 transition-all">

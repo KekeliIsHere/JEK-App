@@ -266,7 +266,7 @@ function AppRoutes() {
           isAuthed && studentName ? (
             <ScoresPage
               studentName={user?.firstname || "Student"}
-              userStats={userStats}
+              //userStats={userStats}
             />
           ) : (
             <Navigate to="/auth-page" replace />
