@@ -24,4 +24,21 @@ router.patch("/section/update/:id", updateSection);
 // DELETE SECTION
 router.delete("/section/delete/:id", deleteSection);
 
+router.get("/all", async (req, res) => {
+
+  try {
+    const [sections] = await db.query("SELECT id, lesson_id, title FROM lesson_sections");
+    return res.status(200).json({
+      success: true,
+      sections,
+    });
+  } catch (err) {
+    console.error("Failed to fetch all sections:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Database error!",
+    });
+  }
+});
+
 export default router;

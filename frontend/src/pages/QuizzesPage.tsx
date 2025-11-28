@@ -89,6 +89,10 @@ export default function QuizzesPage({ userStats }: QuizzesPageProps) {
     return { label: "Challenge", color: "bg-[#68ba4a] text-white" };
   };
 
+    useEffect(() => {
+    document.title = "JEK Logic Tutor | Quizzes";
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8faf9] to-[#e8f5e9] flex">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} activePage="quizzes" />

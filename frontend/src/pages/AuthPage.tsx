@@ -190,6 +190,10 @@ export default function AuthPage() {
     setPasswordMatch(null);
   };
 
+  useEffect(() => {
+    document.title = "JEK Logic Tutor | Login/Register";
+  }, []);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8faf9] via-[#e8f5e9] to-[#d8f0dd] p-4 sm:p-6">
       <div className="w-full max-w-6xl bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl border-2 border-[#e8f5e9] grid grid-cols-1 md:grid-cols-2 overflow-hidden">

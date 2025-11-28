@@ -46,21 +46,23 @@ export const createQuizSubmission = async (req, res) => {
     // compare submitted answers with correct answers
     let correctCount = 0;
 
-    const attemptsToSave = answers.map((ans) => {
-      const quiz = quizMap[ans.quizId];
-      if (!quiz) return null;
+    const attemptsToSave = answers
+      .map((ans) => {
+        const quiz = quizMap[ans.quizId];
+        if (!quiz) return null;
 
-      const isCorrect = ans.selected === quiz.correct;
-      if (isCorrect) correctCount++;
+        const isCorrect = ans.selected === quiz.correct;
+        if (isCorrect) correctCount++;
 
-      return {
-        id: uuid(),
-        submissionId: null, // will be filled later with uuid
-        quizId: ans.quizId,
-        selected: ans.selected,
-        isCorrect,
-      };
-    }).filter(Boolean);
+        return {
+          id: uuid(),
+          submissionId: null, // will be filled later with uuid
+          quizId: ans.quizId,
+          selected: ans.selected,
+          isCorrect,
+        };
+      })
+      .filter(Boolean);
 
     const totalQuestions = quizzes.length;
 
@@ -121,6 +123,34 @@ export const createQuizSubmission = async (req, res) => {
     });
   } catch (err) {
     console.error("Failed to create quiz submission:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Database error",
+    });
+  }
+};
+
+// GET USER SUBMISSIONS
+export const getUserSubmissions = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const [submissions] = await db.query(
+      `SELECT id, section_id, total_questions, correct_count, score, status, attempt_number, duration_seconds, created_at 
+       FROM quiz_submissions 
+       WHERE user_id = ? 
+       ORDER BY created_at DESC`,
+      [userId]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "User submissions fetched successfully!✅",
+      count: submissions.length,
+      submissions,
+    });
+  } catch (err) {
+    console.error("Failed to fetch user submissions:", err);
     return res.status(500).json({
       success: false,
       error: "Database error",

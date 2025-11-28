@@ -50,6 +50,10 @@ const Dashboard = ({ studentName, userStats, studentAvatar }: DashboardProps) =>
     await logout();
   };
 
+  useEffect(() => {
+    document.title = "JEK Logic Tutor | Dashboard";
+  }, []);
+
   return (
     <div className="min-h-screen bg-linear-to-br from-[#f8faf9] to-[#e8f5e9] flex">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} activePage="dashboard" />

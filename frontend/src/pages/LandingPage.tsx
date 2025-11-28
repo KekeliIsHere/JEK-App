@@ -1,9 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { useEffect } from "react";
 
 export default function LandingPage() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+      document.title = "JEK Logic Tutor | Homepage";
+    }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-linear-to-br from-[#f8faf9] to-[#e8f5e9]">
@@ -78,7 +83,7 @@ export default function LandingPage() {
               <div className="relative"  data-aos="fade-up">
                 <div className="relative bg-green-50/60 rounded-3xl p-8 border-2 border-[#e8f5e9]">
                   <div className="flex items-center justify-center">
-                    <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-2xl bg-linear-to-br from-[#68ba4a]/20 to-[#8baab1]/20 flex items-center justify-center">
+                    <div className="w-64 sm:w-80 rounded-2xl bg-linear-to-br from-[#68ba4a]/20 to-[#8baab1]/20 flex items-center justify-center">
                       <img src="../public/JEKlogo.png" alt="JEK Logo" className="z-10 rounded-2xl"/>
                     </div>
                   </div>

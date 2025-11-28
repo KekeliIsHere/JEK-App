@@ -120,6 +120,19 @@ const Sidebar = ({ isOpen, onClose, activePage = "dashboard" }: SidebarProps) =>
               }`}></i>
             <span className="font-medium">Settings</span>
           </Link>
+
+          <Link
+            to="/scores"
+            onClick={() => onClose()}
+            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activePage === "scores"
+              ? "bg-white/90 shadow-sm font-semibold hover:shadow-md"
+              : "hover:bg-white/40"
+              }`}
+          >
+            <i className={`fas fa-chart-bar w-5 ${activePage === "scores" ? "text-[#68ba4a]" : "text-[#060404]"
+              }`}></i>
+            <span className="font-medium">My Scores</span>
+          </Link>
         </nav>
 
         <div className="p-4 mx-3 mb-3 bg-linear-to-br from-white/80 to-white/60 backdrop-blur rounded-xl border border-white/40 shadow-sm">

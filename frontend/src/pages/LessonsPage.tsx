@@ -57,6 +57,10 @@ const LessonsPage = ({ studentName, userStats }: LessonsPageProps) => {
     lesson.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  useEffect(() => {
+    document.title = "JEK Logic Tutor | Lessons";
+  }, []);
+
   return (
     <div className="min-h-screen bg-linear-to-br from-[#f8faf9] to-[#e8f5e9] flex">
       {/* Sidebar Component */}

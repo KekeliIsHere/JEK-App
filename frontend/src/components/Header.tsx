@@ -40,13 +40,17 @@ export default function Header() {
             <img src="../public/JEKlogo.png" alt="JEK Logo" className="w-12 rounded" />
             <div className="hidden sm:block">
               <h1 className="text-xl sm:text-2xl font-bold bg-[#68ba4a] bg-clip-text text-transparent">
-                JEK Logic Tutor
+                <span className="text-[#3b7227]">JEK</span> Logic Tutor
               </h1>
               <p className="text-xs text-[#060404]/60">Master The Concepts of Propositional Logic</p>
             </div>
-            <h1 className="sm:hidden text-lg font-bold bg-[#68ba4a] bg-clip-text text-transparent">
-              JEK Logic Tutor
-            </h1>
+            <div>
+              <h1 className="sm:hidden text-lg font-bold bg-[#68ba4a] bg-clip-text text-transparent">
+                <span className="text-[#3b7227]">JEK</span> Logic Tutor
+              </h1>
+              <p className="text-[9px] text-[#060404]/60 sm:hidden">Master The Concepts of Propositional Logic</p>
+            </div>
+
           </div>
 
           {/* User Avatar/Icon with Dropdown */}
@@ -56,7 +60,7 @@ export default function Header() {
               className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f8faf9] transition-all"
             >
               {user ? (
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-linear-to-br from-[#68ba4a] to-[#8baab1] text-white flex items-center justify-center font-bold shadow-md">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#68ba4a] text-white flex items-center justify-center font-bold shadow-md">
                   {studentAvatar ? (
                     <img src={studentAvatar} alt="User Avatar" className="w-full h-full rounded-full object-cover" />
                   ) : (

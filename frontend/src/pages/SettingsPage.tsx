@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/Sidebar";
 import Swal from "sweetalert2";
@@ -78,6 +78,10 @@ export default function SettingsPage({ studentName }: SettingsPageProps) {
       setAvatarFile(file);
     }
   };
+
+  useEffect(() => {
+    document.title = "JEK Logic Tutor | Lesson  ";
+  }, []);
 
   const handleSaveProfile = async () => {
     if (!user) return;

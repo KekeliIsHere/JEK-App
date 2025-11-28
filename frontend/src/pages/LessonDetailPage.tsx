@@ -120,6 +120,10 @@ const LessonDetailPage = ({ studentName, userStats: propsUserStats, onUpdateStat
     loadLessonData();
   }, [id, navigate]);
 
+  useEffect(() => {
+    document.title = "JEK Logic Tutor | Lesson Sections";
+  }, []);
+
   const handleStartLesson = () => {
     if (sections.length === 0) {
       alert("⚠️ No sections available for this lesson yet.");
@@ -319,6 +323,8 @@ const LessonDetailPage = ({ studentName, userStats: propsUserStats, onUpdateStat
   const isCurrentSectionCompleted = progress.find(
     p => p.sectionId === currentSection?.id
   )?.isCompleted || false;
+
+
 
   return (
     <div className="min-h-screen bg-[#fbf9f9] text-[#060404]">

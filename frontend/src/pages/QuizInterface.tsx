@@ -247,6 +247,10 @@ const QuizInterface = ({ studentName, userStats, onUpdateStats }: QuizInterfaceP
     }
   };
 
+    useEffect(() => {
+    document.title = "JEK Logic Tutor | Take Quiz";
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#fbf9f9] flex items-center justify-center">

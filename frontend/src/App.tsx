@@ -25,6 +25,7 @@ import LessonDetailPage from "../src/pages/LessonDetailPage";
 import QuizInterface from "../src/pages/QuizInterface";
 import GameInterface from "../src/pages/GameInterface";
 import SettingsPage from "./pages/SettingsPage";
+import ScoresPage from "./pages/ScoresPage";
 //import AdminPage from "../src/pages/AdminPage";
 import LandingPage from "./pages/LandingPage";
 
@@ -252,6 +253,21 @@ function AppRoutes() {
         element={
           isAuthed && studentName ? (
             <SettingsPage studentName={user?.firstname || "Student"} />
+          ) : (
+            <Navigate to="/auth-page" replace />
+          )
+        }
+      />
+
+      {/* Protected: Scores */}
+      <Route
+        path="/scores"
+        element={
+          isAuthed && studentName ? (
+            <ScoresPage
+              studentName={user?.firstname || "Student"}
+              userStats={userStats}
+            />
           ) : (
             <Navigate to="/auth-page" replace />
           )
