@@ -84,7 +84,7 @@ export default function LandingPage() {
                 <div className="relative bg-green-50/60 rounded-3xl p-8 border-2 border-[#e8f5e9]">
                   <div className="flex items-center justify-center">
                     <div className="w-64 sm:w-80 rounded-2xl bg-linear-to-br from-[#68ba4a]/20 to-[#8baab1]/20 flex items-center justify-center">
-                      <img src="../public/JEKlogo.png" alt="JEK Logo" className="z-10 rounded-2xl"/>
+                      <img src="./JEKlogo.png" alt="JEK Logo" className="z-10 rounded-2xl"/>
                     </div>
                   </div>
 

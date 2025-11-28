@@ -37,7 +37,7 @@ export default function Header() {
             {/* <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-linear-to-br from-[#68ba4a] to-[#8baab1] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
               <i className="fas fa-brain text-white text-xl sm:text-2xl"></i>
             </div> */}
-            <img src="../public/JEKlogo.png" alt="JEK Logo" className="w-12 rounded" />
+            <img src="./JEKlogo.png" alt="JEK Logo" className="w-12 rounded" />
             <div className="hidden sm:block">
               <h1 className="text-xl sm:text-2xl font-bold bg-[#68ba4a] bg-clip-text text-transparent">
                 <span className="text-[#3b7227]">JEK</span> Logic Tutor
