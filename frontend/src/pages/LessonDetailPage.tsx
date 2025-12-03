@@ -552,7 +552,7 @@ const LessonDetailPage = ({ studentName, userStats: propsUserStats, onUpdateStat
             </section>
 
             {/* Start Button */}
-            <div className="flex justify-center" data-aos="zoom-in" data-aos-delay="200">
+            <div className="flex justify-center">
               <button
                 onClick={handleStartLesson}
                 className="px-8 py-4 rounded-xl bg-gradient-to-r from-[#68ba4a] to-[#7cc55f] text-white font-bold text-lg hover:from-[#5a9a3d] hover:to-[#68ba4a] transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-3"

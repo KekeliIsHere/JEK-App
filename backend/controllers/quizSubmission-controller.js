@@ -157,7 +157,7 @@ export const createQuizSubmission = async (req, res) => {
       }
 
       console.log(
-        `✅ Lesson score computed: ${lessonScore}% for lesson ${lessonId}`
+        `Lesson score computed: ${lessonScore}% for lesson ${lessonId}`
       );
     }
     // ===== END AUTOMATIC LESSON SCORE COMPUTATION =====

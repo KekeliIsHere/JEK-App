@@ -97,7 +97,6 @@ export const insertQuiz = async (req, res) => {
 export const getQuizzesByLessons = async (req, res) => {
   const { lessonId } = req.params;
   const { sectionId } = req.query;
-
   // check if lesson exits
   try {
     const [rows] = await db.query("SELECT id FROM lessons WHERE id = ?", [
@@ -109,7 +108,6 @@ export const getQuizzesByLessons = async (req, res) => {
         error: "Lesson does not exist",
       });
     }
-
     // base select query
     let selectQuery = "SELECT * FROM quizzes WHERE lesson_id = ?";
     const values = [lessonId];
@@ -118,17 +116,13 @@ export const getQuizzesByLessons = async (req, res) => {
       selectQuery += " AND section_id = ?";
       values.push(sectionId);
     }
-
     selectQuery += " ORDER BY order_index ASC";
-
     const [result] = await db.query(selectQuery, values);
-
     // spread each quiz and parse the options
     const quizzes = result.map((quiz) => ({
       ...quiz,
       options: JSON.parse(quiz.options),
     }));
-
     return res.status(200).json({
       success: true,
       counts: quizzes.length,

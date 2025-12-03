@@ -1,7 +1,7 @@
 import mysql from "mysql2";
 import dotenv from "dotenv";
 
-dotenv.config()
+dotenv.config();
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
@@ -18,12 +18,12 @@ const db = pool.promise();
 
 // Test the database connection
 db.getConnection()
-  .then(connection => {
+  .then((connection) => {
     console.log("Connected to database successfully!✅");
     connection.release();
   })
-  .catch(err => {
+  .catch((err) => {
     console.error(`Connection failed!: ${err.stack}`);
   });
-  
+
 export default db;
